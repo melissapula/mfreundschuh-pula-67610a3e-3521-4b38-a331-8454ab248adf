@@ -15,12 +15,8 @@
     "skipDefaultLibCheck": true,
     "strict": false,
     "paths": {
-      "@mfreundschuh-pula-67610a3e-3521-4b38-a331-8454ab248adf/data": [
-        "./libs/data/src/index.ts"
-      ],
-      "@mfreundschuh-pula-67610a3e-3521-4b38-a331-8454ab248adf/auth": [
-        "./libs/auth/src/index.ts"
-      ]
+      "@app/data": ["./libs/data/src/index.ts"],
+      "@app/auth": ["./libs/auth/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
