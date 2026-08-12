@@ -1,5 +1,5 @@
 import { Component, HostListener, OnInit, ViewChild, ElementRef, computed, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { CreateTaskInput, Permission, Task, TaskCategory, TaskStatus, UpdateTaskInput } from '@app/data/browser';
 import { roleHasPermission } from '@app/auth/core';
@@ -48,6 +48,7 @@ export class DashboardComponent implements OnInit {
     readonly store: TasksStore,
     readonly auth: AuthService,
     readonly theme: ThemeService,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -80,7 +81,7 @@ export class DashboardComponent implements OnInit {
   }
 
   async deleteTask(task: Task): Promise<void> {
-    if (!confirm(`Delete "${task.title}"?`)) return;
+    // TaskCardComponent already gates this behind its own two-click confirm.
     await this.store.remove(task.id);
   }
 
@@ -105,6 +106,7 @@ export class DashboardComponent implements OnInit {
 
   logout(): void {
     this.auth.logout();
+    this.router.navigateByUrl('/login');
   }
 
   @HostListener('document:keydown', ['$event'])
