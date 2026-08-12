@@ -7,6 +7,10 @@ import { AuthService } from './auth.service';
 /** Attaches the JWT to every outgoing request that has one. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  // Must inject Router here, synchronously within the interceptor's own
+  // invocation — inject() has no injection context to run in once we're
+  // inside the catchError callback below, which fires later/async.
+  const router = inject(Router);
   const token = auth.accessToken();
 
   const authedReq = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
@@ -17,7 +21,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         // Token missing/expired/invalid — the session is no longer valid
         // anywhere, so clear it and send the user back to log in.
         auth.logout();
-        inject(Router).navigate(['/login']);
+        router.navigate(['/login']);
       }
       return throwError(() => error);
     }),
