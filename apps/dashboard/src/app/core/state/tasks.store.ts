@@ -1,6 +1,12 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CreateTaskInput, Task, TaskCategory, TaskStatus, UpdateTaskInput } from '@app/data/browser';
+import {
+  CreateTaskInput,
+  Task,
+  TaskCategory,
+  TaskStatus,
+  UpdateTaskInput,
+} from '@app/data/browser';
 import { TasksApiService } from '../api/tasks-api.service';
 
 export type CategoryFilter = TaskCategory | 'ALL';
@@ -40,11 +46,15 @@ export class TasksStore {
     let list = this._tasks();
     if (category !== 'ALL') list = list.filter((t) => t.category === category);
     if (status !== 'ALL') list = list.filter((t) => t.status === status);
-    if (search) list = list.filter((t) => t.title.toLowerCase().includes(search));
+    if (search)
+      list = list.filter((t) => t.title.toLowerCase().includes(search));
 
     return [...list].sort((a, b) => {
       if (sortBy === 'title') return a.title.localeCompare(b.title);
-      if (sortBy === 'createdAt') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortBy === 'createdAt')
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       return a.order - b.order;
     });
   });
@@ -53,7 +63,9 @@ export class TasksStore {
     const list = this.filteredTasks();
     return {
       [TaskStatus.TODO]: list.filter((t) => t.status === TaskStatus.TODO),
-      [TaskStatus.IN_PROGRESS]: list.filter((t) => t.status === TaskStatus.IN_PROGRESS),
+      [TaskStatus.IN_PROGRESS]: list.filter(
+        (t) => t.status === TaskStatus.IN_PROGRESS,
+      ),
       [TaskStatus.DONE]: list.filter((t) => t.status === TaskStatus.DONE),
     };
   });
@@ -63,7 +75,11 @@ export class TasksStore {
     const list = this._tasks();
     const total = list.length;
     const done = list.filter((t) => t.status === TaskStatus.DONE).length;
-    return { total, done, percent: total ? Math.round((done / total) * 100) : 0 };
+    return {
+      total,
+      done,
+      percent: total ? Math.round((done / total) * 100) : 0,
+    };
   });
 
   constructor(private readonly api: TasksApiService) {}
@@ -104,7 +120,9 @@ export class TasksStore {
 
   async update(id: string, dto: UpdateTaskInput): Promise<void> {
     const updated = await firstValueFrom(this.api.update(id, dto));
-    this._tasks.update((tasks) => tasks.map((t) => (t.id === id ? updated : t)));
+    this._tasks.update((tasks) =>
+      tasks.map((t) => (t.id === id ? updated : t)),
+    );
   }
 
   async remove(id: string): Promise<void> {
@@ -119,7 +137,10 @@ export class TasksStore {
    * actually changed — covers both reordering and status-change-by-drag
    * with one code path.
    */
-  async reorderColumn(status: TaskStatus, orderedTaskIds: string[]): Promise<void> {
+  async reorderColumn(
+    status: TaskStatus,
+    orderedTaskIds: string[],
+  ): Promise<void> {
     const current = this._tasks();
     const changed: Array<{ id: string; dto: UpdateTaskInput }> = [];
 
@@ -138,6 +159,8 @@ export class TasksStore {
       }),
     );
 
-    await Promise.all(changed.map(({ id, dto }) => firstValueFrom(this.api.update(id, dto))));
+    await Promise.all(
+      changed.map(({ id, dto }) => firstValueFrom(this.api.update(id, dto))),
+    );
   }
 }

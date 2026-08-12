@@ -5,7 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PermissionsGuard } from '@app/auth';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuditLogEntity, OrganizationEntity, TaskEntity, UserEntity } from '../entities';
+import {
+  AuditLogEntity,
+  OrganizationEntity,
+  TaskEntity,
+  UserEntity,
+} from '../entities';
 import { AuthModule } from '../auth/auth.module';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuditModule } from '../audit/audit.module';

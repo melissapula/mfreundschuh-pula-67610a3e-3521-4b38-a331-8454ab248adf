@@ -25,11 +25,15 @@ export class AuditService {
   private readonly logger = new Logger('AuditLog');
 
   constructor(
-    @InjectRepository(AuditLogEntity) private readonly repo: Repository<AuditLogEntity>,
+    @InjectRepository(AuditLogEntity)
+    private readonly repo: Repository<AuditLogEntity>,
   ) {}
 
   async log(input: AuditLogInput): Promise<void> {
-    const entry = this.repo.create({ ...input, metadata: input.metadata ?? null });
+    const entry = this.repo.create({
+      ...input,
+      metadata: input.metadata ?? null,
+    });
     await this.repo.save(entry);
     this.logger.log(
       `${input.action} actor=${input.actorEmail || '(unknown)'} resource=${input.resourceType}:${

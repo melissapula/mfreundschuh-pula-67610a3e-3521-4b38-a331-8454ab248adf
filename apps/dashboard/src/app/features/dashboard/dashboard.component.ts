@@ -1,7 +1,22 @@
-import { Component, HostListener, OnInit, ViewChild, ElementRef, computed, signal } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  computed,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
-import { CreateTaskInput, Permission, Task, TaskCategory, TaskStatus, UpdateTaskInput } from '@app/data/browser';
+import {
+  CreateTaskInput,
+  Permission,
+  Task,
+  TaskCategory,
+  TaskStatus,
+  UpdateTaskInput,
+} from '@app/data/browser';
 import { roleHasPermission } from '@app/auth/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/state/theme.service';
@@ -18,7 +33,13 @@ interface Column {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, DragDropModule, TaskCardComponent, TaskFormDialogComponent, CompletionChartComponent],
+  imports: [
+    RouterLink,
+    DragDropModule,
+    TaskCardComponent,
+    TaskFormDialogComponent,
+    CompletionChartComponent,
+  ],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
@@ -94,13 +115,22 @@ export class DashboardComponent implements OnInit {
     if (event.previousContainer === event.container) {
       const [moved] = sourceTasks.splice(event.previousIndex, 1);
       sourceTasks.splice(event.currentIndex, 0, moved);
-      this.store.reorderColumn(targetStatus, sourceTasks.map((t) => t.id));
+      this.store.reorderColumn(
+        targetStatus,
+        sourceTasks.map((t) => t.id),
+      );
     } else {
       const destTasks = [...event.container.data];
       const [moved] = sourceTasks.splice(event.previousIndex, 1);
       destTasks.splice(event.currentIndex, 0, moved);
-      this.store.reorderColumn(sourceStatus, sourceTasks.map((t) => t.id));
-      this.store.reorderColumn(targetStatus, destTasks.map((t) => t.id));
+      this.store.reorderColumn(
+        sourceStatus,
+        sourceTasks.map((t) => t.id),
+      );
+      this.store.reorderColumn(
+        targetStatus,
+        destTasks.map((t) => t.id),
+      );
     }
   }
 
@@ -112,7 +142,10 @@ export class DashboardComponent implements OnInit {
   @HostListener('document:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
     const target = event.target as HTMLElement;
-    const typing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+    const typing =
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable;
 
     if (typing || this.showForm()) return;
 

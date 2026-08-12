@@ -9,7 +9,8 @@ import { UserEntity } from '../entities';
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(UserEntity) private readonly users: Repository<UserEntity>,
+    @InjectRepository(UserEntity)
+    private readonly users: Repository<UserEntity>,
     private readonly jwt: JwtService,
   ) {}
 
@@ -18,7 +19,10 @@ export class AuthService {
    * wrong password) — deliberately not distinguishing the two so the
    * controller can't leak which case occurred via timing or audit detail.
    */
-  async validateCredentials(email: string, password: string): Promise<UserEntity | null> {
+  async validateCredentials(
+    email: string,
+    password: string,
+  ): Promise<UserEntity | null> {
     const user = await this.users.findOne({ where: { email } });
     if (!user) {
       return null;

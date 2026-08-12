@@ -21,7 +21,10 @@ describe('AuditService', () => {
       });
 
       expect(create).toHaveBeenCalledWith(
-        expect.objectContaining({ action: AuditAction.TASK_CREATE, metadata: null }),
+        expect.objectContaining({
+          action: AuditAction.TASK_CREATE,
+          metadata: null,
+        }),
       );
       expect(save).toHaveBeenCalled();
     });
@@ -30,7 +33,9 @@ describe('AuditService', () => {
   describe('findByOrgIds', () => {
     it('returns an empty array without querying when given no org ids', async () => {
       const createQueryBuilder = jest.fn();
-      const repo = { createQueryBuilder } as unknown as Repository<AuditLogEntity>;
+      const repo = {
+        createQueryBuilder,
+      } as unknown as Repository<AuditLogEntity>;
       const service = new AuditService(repo);
 
       const result = await service.findByOrgIds([]);
@@ -46,14 +51,19 @@ describe('AuditService', () => {
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue(['entry1', 'entry2']),
       };
-      const repo = { createQueryBuilder: jest.fn().mockReturnValue(qb) } as unknown as Repository<AuditLogEntity>;
+      const repo = {
+        createQueryBuilder: jest.fn().mockReturnValue(qb),
+      } as unknown as Repository<AuditLogEntity>;
       const service = new AuditService(repo);
 
       const result = await service.findByOrgIds(['acme', 'acme-eng']);
 
-      expect(qb.where).toHaveBeenCalledWith('log.organizationId IN (:...orgIds)', {
-        orgIds: ['acme', 'acme-eng'],
-      });
+      expect(qb.where).toHaveBeenCalledWith(
+        'log.organizationId IN (:...orgIds)',
+        {
+          orgIds: ['acme', 'acme-eng'],
+        },
+      );
       expect(qb.orderBy).toHaveBeenCalledWith('log.createdAt', 'DESC');
       expect(result).toEqual(['entry1', 'entry2']);
     });

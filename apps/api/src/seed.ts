@@ -8,7 +8,12 @@ import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Role, TaskCategory, TaskStatus } from '@app/data';
-import { AuditLogEntity, OrganizationEntity, TaskEntity, UserEntity } from './entities';
+import {
+  AuditLogEntity,
+  OrganizationEntity,
+  TaskEntity,
+  UserEntity,
+} from './entities';
 
 const DEV_PASSWORD = 'Password123!';
 
@@ -32,7 +37,9 @@ async function seed() {
   await userRepo.clear();
   await orgRepo.clear();
 
-  const acme = await orgRepo.save(orgRepo.create({ name: 'Acme Corp', parentOrgId: null }));
+  const acme = await orgRepo.save(
+    orgRepo.create({ name: 'Acme Corp', parentOrgId: null }),
+  );
   const engineering = await orgRepo.save(
     orgRepo.create({ name: 'Acme Corp / Engineering', parentOrgId: acme.id }),
   );
@@ -40,10 +47,20 @@ async function seed() {
   const passwordHash = await bcrypt.hash(DEV_PASSWORD, 10);
 
   const owner = await userRepo.save(
-    userRepo.create({ email: 'owner@acme.test', passwordHash, role: Role.OWNER, organizationId: acme.id }),
+    userRepo.create({
+      email: 'owner@acme.test',
+      passwordHash,
+      role: Role.OWNER,
+      organizationId: acme.id,
+    }),
   );
   const admin = await userRepo.save(
-    userRepo.create({ email: 'admin@acme.test', passwordHash, role: Role.ADMIN, organizationId: acme.id }),
+    userRepo.create({
+      email: 'admin@acme.test',
+      passwordHash,
+      role: Role.ADMIN,
+      organizationId: acme.id,
+    }),
   );
   const adminEng = await userRepo.save(
     userRepo.create({

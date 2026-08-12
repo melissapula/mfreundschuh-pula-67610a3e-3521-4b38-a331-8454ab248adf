@@ -3,9 +3,19 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "seed": "ts-node -r reflect-metadata --project apps/api/tsconfig.app.json apps/api/src/seed.ts"
+    "seed": "ts-node -r reflect-metadata --project apps/api/tsconfig.app.json apps/api/src/seed.ts",
+    "prepare": "husky"
   },
   "private": true,
+  "lint-staged": {
+    "*.{ts,html}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  },
   "dependencies": {
     "@angular/cdk": "~22.0.4",
     "@angular/common": "~22.0.4",
@@ -66,11 +76,13 @@
     "dotenv": "^17.4.2",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
+    "husky": "^9.1.7",
     "jest": "~30.3.0",
     "jest-environment-jsdom": "~30.3.0",
     "jest-environment-node": "~30.3.0",
     "jest-preset-angular": "~17.0.0",
     "jest-util": "~30.3.0",
+    "lint-staged": "^17.3.0",
     "nx": "23.1.1",
     "postcss": "^8.5.26",
     "prettier": "~3.6.2",

@@ -8,10 +8,17 @@ describe('OrgScopeService', () => {
       { id: 'acme', parentOrgId: null },
       { id: 'acme-eng', parentOrgId: 'acme' },
     ];
-    const organizations = { findAll: jest.fn().mockResolvedValue(orgs) } as unknown as OrganizationsService;
+    const organizations = {
+      findAll: jest.fn().mockResolvedValue(orgs),
+    } as unknown as OrganizationsService;
     const service = new OrgScopeService(organizations);
 
-    const user: AuthUser = { sub: 'u1', email: 'a@acme.test', role: Role.ADMIN, organizationId: 'acme' };
+    const user: AuthUser = {
+      sub: 'u1',
+      email: 'a@acme.test',
+      role: Role.ADMIN,
+      organizationId: 'acme',
+    };
     const orgIds = await service.accessibleOrgIds(user);
 
     expect(organizations.findAll).toHaveBeenCalled();

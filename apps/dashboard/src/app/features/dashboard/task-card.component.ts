@@ -17,7 +17,8 @@ export class TaskCardComponent {
 
   readonly categoryClasses: Record<string, string> = {
     WORK: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
-    PERSONAL: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200',
+    PERSONAL:
+      'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200',
     OTHER: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
   };
 
@@ -33,7 +34,10 @@ export class TaskCardComponent {
   onDeleteClick(): void {
     if (!this.confirmingDelete()) {
       this.confirmingDelete.set(true);
-      this.revertTimer = setTimeout(() => this.confirmingDelete.set(false), 3000);
+      this.revertTimer = setTimeout(
+        () => this.confirmingDelete.set(false),
+        3000,
+      );
       return;
     }
     clearTimeout(this.revertTimer);

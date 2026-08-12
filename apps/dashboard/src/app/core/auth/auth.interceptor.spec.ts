@@ -1,6 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  HttpClient,
+  provideHttpClient,
+  withInterceptors,
+} from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
@@ -12,7 +19,10 @@ describe('authInterceptor', () => {
   let routerMock: { navigate: jest.Mock };
 
   beforeEach(() => {
-    authServiceMock = { accessToken: jest.fn().mockReturnValue(null), logout: jest.fn() };
+    authServiceMock = {
+      accessToken: jest.fn().mockReturnValue(null),
+      logout: jest.fn(),
+    };
     routerMock = { navigate: jest.fn() };
 
     TestBed.configureTestingModule({
@@ -54,7 +64,10 @@ describe('authInterceptor', () => {
     http.get('/api/tasks').subscribe({ error: () => undefined });
 
     const req = httpMock.expectOne('/api/tasks');
-    req.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
+    req.flush(
+      { message: 'Unauthorized' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
 
     expect(authServiceMock.logout).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(['/login']);
@@ -64,7 +77,10 @@ describe('authInterceptor', () => {
     http.get('/api/tasks').subscribe({ error: () => undefined });
 
     const req = httpMock.expectOne('/api/tasks');
-    req.flush({ message: 'Server error' }, { status: 500, statusText: 'Internal Server Error' });
+    req.flush(
+      { message: 'Server error' },
+      { status: 500, statusText: 'Internal Server Error' },
+    );
 
     expect(authServiceMock.logout).not.toHaveBeenCalled();
   });

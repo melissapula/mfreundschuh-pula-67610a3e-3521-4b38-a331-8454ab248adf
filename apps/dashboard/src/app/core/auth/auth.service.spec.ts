@@ -6,7 +6,12 @@ import { AuthService } from './auth.service';
 describe('AuthService', () => {
   const loginResponse = {
     accessToken: 'signed.jwt.token',
-    user: { sub: 'u1', email: 'admin@acme.test', role: Role.ADMIN, organizationId: 'acme' },
+    user: {
+      sub: 'u1',
+      email: 'admin@acme.test',
+      role: Role.ADMIN,
+      organizationId: 'acme',
+    },
   };
 
   beforeEach(() => {
@@ -31,7 +36,9 @@ describe('AuthService', () => {
   });
 
   it('login() updates signals and persists the session', () => {
-    const http = { post: jest.fn().mockReturnValue(of(loginResponse)) } as unknown as HttpClient;
+    const http = {
+      post: jest.fn().mockReturnValue(of(loginResponse)),
+    } as unknown as HttpClient;
     const auth = new AuthService(http);
 
     auth.login('admin@acme.test', 'Password123!').subscribe();
@@ -42,7 +49,9 @@ describe('AuthService', () => {
   });
 
   it('logout() clears signals and localStorage', () => {
-    const http = { post: jest.fn().mockReturnValue(of(loginResponse)) } as unknown as HttpClient;
+    const http = {
+      post: jest.fn().mockReturnValue(of(loginResponse)),
+    } as unknown as HttpClient;
     const auth = new AuthService(http);
     auth.login('admin@acme.test', 'Password123!').subscribe();
 

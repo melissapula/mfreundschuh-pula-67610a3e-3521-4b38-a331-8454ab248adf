@@ -24,7 +24,7 @@ describe('role-permissions', () => {
     }
   });
 
-  it('every role\'s permission set is a superset of the role below it (monotonic inheritance)', () => {
+  it("every role's permission set is a superset of the role below it (monotonic inheritance)", () => {
     const viewer = new Set(permissionsForRole(Role.VIEWER));
     const admin = new Set(permissionsForRole(Role.ADMIN));
     const owner = new Set(permissionsForRole(Role.OWNER));

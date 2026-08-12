@@ -7,7 +7,11 @@ import { TasksService } from './tasks.service';
 import { TasksController } from './tasks.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TaskEntity]), AuditModule, OrganizationsModule],
+  imports: [
+    TypeOrmModule.forFeature([TaskEntity]),
+    AuditModule,
+    OrganizationsModule,
+  ],
   controllers: [TasksController],
   providers: [TasksService],
 })

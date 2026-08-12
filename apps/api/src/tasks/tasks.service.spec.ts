@@ -7,7 +7,12 @@ import { AuditService } from '../audit/audit.service';
 import { OrgScopeService } from '../organizations/org-scope.service';
 
 describe('TasksService', () => {
-  const admin: AuthUser = { sub: 'admin-1', email: 'admin@acme.test', role: Role.ADMIN, organizationId: 'acme' };
+  const admin: AuthUser = {
+    sub: 'admin-1',
+    email: 'admin@acme.test',
+    role: Role.ADMIN,
+    organizationId: 'acme',
+  };
 
   let tasksRepo: {
     create: jest.Mock;
@@ -51,16 +56,22 @@ describe('TasksService', () => {
     });
 
     it('logs a TASK_CREATE audit entry', async () => {
-      await service.create(admin, { title: 'New task', category: TaskCategory.WORK });
+      await service.create(admin, {
+        title: 'New task',
+        category: TaskCategory.WORK,
+      });
 
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: AuditAction.TASK_CREATE, actorUserId: 'admin-1' }),
+        expect.objectContaining({
+          action: AuditAction.TASK_CREATE,
+          actorUserId: 'admin-1',
+        }),
       );
     });
   });
 
   describe('findAllForUser', () => {
-    it('queries only within the actor\'s accessible org ids', async () => {
+    it("queries only within the actor's accessible org ids", async () => {
       orgScope.accessibleOrgIds.mockResolvedValue(['acme', 'acme-eng']);
       const qb = {
         where: jest.fn().mockReturnThis(),
@@ -71,9 +82,12 @@ describe('TasksService', () => {
 
       const result = await service.findAllForUser(admin);
 
-      expect(qb.where).toHaveBeenCalledWith('task.organizationId IN (:...orgIds)', {
-        orgIds: ['acme', 'acme-eng'],
-      });
+      expect(qb.where).toHaveBeenCalledWith(
+        'task.organizationId IN (:...orgIds)',
+        {
+          orgIds: ['acme', 'acme-eng'],
+        },
+      );
       expect(result).toHaveLength(2);
     });
 
@@ -92,56 +106,88 @@ describe('TasksService', () => {
       await service.findAllForUser(admin);
 
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: AuditAction.TASK_READ_LIST, metadata: { count: 0 } }),
+        expect.objectContaining({
+          action: AuditAction.TASK_READ_LIST,
+          metadata: { count: 0 },
+        }),
       );
     });
   });
 
   describe('update', () => {
-    it('updates a task within the actor\'s org scope', async () => {
-      tasksRepo.findOne.mockResolvedValue({ id: 'task-1', organizationId: 'acme', title: 'Old' });
+    it("updates a task within the actor's org scope", async () => {
+      tasksRepo.findOne.mockResolvedValue({
+        id: 'task-1',
+        organizationId: 'acme',
+        title: 'Old',
+      });
       orgScope.accessibleOrgIds.mockResolvedValue(['acme']);
 
-      const result = await service.update(admin, 'task-1', { title: 'New title' });
+      const result = await service.update(admin, 'task-1', {
+        title: 'New title',
+      });
 
       expect(result.title).toBe('New title');
-      expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: AuditAction.TASK_UPDATE }));
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: AuditAction.TASK_UPDATE }),
+      );
     });
 
     it('throws NotFoundException when the task does not exist', async () => {
       tasksRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.update(admin, 'missing', { title: 'x' })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update(admin, 'missing', { title: 'x' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException (not Forbidden) when the task exists but is outside the actor\'s org scope, and logs ACCESS_DENIED', async () => {
-      tasksRepo.findOne.mockResolvedValue({ id: 'task-1', organizationId: 'other-org', title: 'Old' });
+    it("throws NotFoundException (not Forbidden) when the task exists but is outside the actor's org scope, and logs ACCESS_DENIED", async () => {
+      tasksRepo.findOne.mockResolvedValue({
+        id: 'task-1',
+        organizationId: 'other-org',
+        title: 'Old',
+      });
       orgScope.accessibleOrgIds.mockResolvedValue(['acme']); // does not include 'other-org'
 
-      await expect(service.update(admin, 'task-1', { title: 'New title' })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update(admin, 'task-1', { title: 'New title' }),
+      ).rejects.toThrow(NotFoundException);
       expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: AuditAction.ACCESS_DENIED, resourceId: 'task-1' }),
+        expect.objectContaining({
+          action: AuditAction.ACCESS_DENIED,
+          resourceId: 'task-1',
+        }),
       );
       expect(tasksRepo.save).not.toHaveBeenCalled();
     });
   });
 
   describe('remove', () => {
-    it('removes a task within the actor\'s org scope and logs TASK_DELETE', async () => {
-      tasksRepo.findOne.mockResolvedValue({ id: 'task-1', organizationId: 'acme' });
+    it("removes a task within the actor's org scope and logs TASK_DELETE", async () => {
+      tasksRepo.findOne.mockResolvedValue({
+        id: 'task-1',
+        organizationId: 'acme',
+      });
       orgScope.accessibleOrgIds.mockResolvedValue(['acme']);
 
       await service.remove(admin, 'task-1');
 
       expect(tasksRepo.remove).toHaveBeenCalled();
-      expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: AuditAction.TASK_DELETE }));
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: AuditAction.TASK_DELETE }),
+      );
     });
 
-    it('refuses to delete a task outside the actor\'s org scope', async () => {
-      tasksRepo.findOne.mockResolvedValue({ id: 'task-1', organizationId: 'other-org' });
+    it("refuses to delete a task outside the actor's org scope", async () => {
+      tasksRepo.findOne.mockResolvedValue({
+        id: 'task-1',
+        organizationId: 'other-org',
+      });
       orgScope.accessibleOrgIds.mockResolvedValue(['acme']);
 
-      await expect(service.remove(admin, 'task-1')).rejects.toThrow(NotFoundException);
+      await expect(service.remove(admin, 'task-1')).rejects.toThrow(
+        NotFoundException,
+      );
       expect(tasksRepo.remove).not.toHaveBeenCalled();
     });
   });

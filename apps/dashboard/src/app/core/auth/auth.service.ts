@@ -34,7 +34,10 @@ export class AuthService {
 
   login(email: string, password: string): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(`${environment.apiUrl}/auth/login`, { email, password })
+      .post<LoginResponse>(`${environment.apiUrl}/auth/login`, {
+        email,
+        password,
+      })
       .pipe(tap((res) => this.setState(res)));
   }
 

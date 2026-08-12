@@ -20,17 +20,48 @@ function makeTask(overrides: Partial<Task>): Task {
 }
 
 describe('TasksStore', () => {
-  let api: { list: jest.Mock; create: jest.Mock; update: jest.Mock; remove: jest.Mock };
+  let api: {
+    list: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    remove: jest.Mock;
+  };
   let store: TasksStore;
 
   const tasks: Task[] = [
-    makeTask({ id: 't1', title: 'Zebra task', category: TaskCategory.WORK, status: TaskStatus.TODO, order: 1, createdAt: '2026-01-01T00:00:00.000Z' }),
-    makeTask({ id: 't2', title: 'Alpha task', category: TaskCategory.PERSONAL, status: TaskStatus.DONE, order: 0, createdAt: '2026-01-03T00:00:00.000Z' }),
-    makeTask({ id: 't3', title: 'Middle task', category: TaskCategory.WORK, status: TaskStatus.IN_PROGRESS, order: 0, createdAt: '2026-01-02T00:00:00.000Z' }),
+    makeTask({
+      id: 't1',
+      title: 'Zebra task',
+      category: TaskCategory.WORK,
+      status: TaskStatus.TODO,
+      order: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    }),
+    makeTask({
+      id: 't2',
+      title: 'Alpha task',
+      category: TaskCategory.PERSONAL,
+      status: TaskStatus.DONE,
+      order: 0,
+      createdAt: '2026-01-03T00:00:00.000Z',
+    }),
+    makeTask({
+      id: 't3',
+      title: 'Middle task',
+      category: TaskCategory.WORK,
+      status: TaskStatus.IN_PROGRESS,
+      order: 0,
+      createdAt: '2026-01-02T00:00:00.000Z',
+    }),
   ];
 
   beforeEach(async () => {
-    api = { list: jest.fn().mockReturnValue(of(tasks)), create: jest.fn(), update: jest.fn(), remove: jest.fn() };
+    api = {
+      list: jest.fn().mockReturnValue(of(tasks)),
+      create: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+    };
     store = new TasksStore(api as unknown as TasksApiService);
     await store.load();
   });
@@ -86,7 +117,10 @@ describe('TasksStore', () => {
       // t1 (order 1) and a hypothetical reorder to [t1] at index 0 in TODO
       await store.reorderColumn(TaskStatus.TODO, ['t1']);
 
-      expect(api.update).toHaveBeenCalledWith('t1', { order: 0, status: TaskStatus.TODO });
+      expect(api.update).toHaveBeenCalledWith('t1', {
+        order: 0,
+        status: TaskStatus.TODO,
+      });
       expect(api.update).toHaveBeenCalledTimes(1);
     });
 
@@ -97,7 +131,10 @@ describe('TasksStore', () => {
 
       await store.reorderColumn(TaskStatus.DONE, ['t3']);
 
-      expect(api.update).toHaveBeenCalledWith('t3', { order: 0, status: TaskStatus.DONE });
+      expect(api.update).toHaveBeenCalledWith('t3', {
+        order: 0,
+        status: TaskStatus.DONE,
+      });
     });
   });
 });

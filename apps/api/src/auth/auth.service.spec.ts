@@ -32,18 +32,30 @@ describe('AuthService', () => {
 
   describe('validateCredentials', () => {
     it('returns the user when email and password match', async () => {
-      users.findOne.mockResolvedValue({ ...baseUser, passwordHash: storedHash });
+      users.findOne.mockResolvedValue({
+        ...baseUser,
+        passwordHash: storedHash,
+      });
 
-      const result = await service.validateCredentials('admin@acme.test', 'correct-password');
+      const result = await service.validateCredentials(
+        'admin@acme.test',
+        'correct-password',
+      );
 
       expect(result).not.toBeNull();
       expect(result?.id).toBe('user-1');
     });
 
     it('returns null for a wrong password on a real account', async () => {
-      users.findOne.mockResolvedValue({ ...baseUser, passwordHash: storedHash });
+      users.findOne.mockResolvedValue({
+        ...baseUser,
+        passwordHash: storedHash,
+      });
 
-      const result = await service.validateCredentials('admin@acme.test', 'wrong-password');
+      const result = await service.validateCredentials(
+        'admin@acme.test',
+        'wrong-password',
+      );
 
       expect(result).toBeNull();
     });
@@ -51,7 +63,10 @@ describe('AuthService', () => {
     it('returns null for an email with no matching account, without distinguishing the failure', async () => {
       users.findOne.mockResolvedValue(null);
 
-      const result = await service.validateCredentials('nobody@acme.test', 'anything');
+      const result = await service.validateCredentials(
+        'nobody@acme.test',
+        'anything',
+      );
 
       expect(result).toBeNull();
     });

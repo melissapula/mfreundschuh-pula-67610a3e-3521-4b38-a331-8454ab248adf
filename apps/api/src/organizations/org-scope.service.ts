@@ -15,6 +15,9 @@ export class OrgScopeService {
 
   async accessibleOrgIds(user: AuthUser): Promise<string[]> {
     const orgs = await this.organizations.findAll();
-    return getAccessibleOrgIds({ role: user.role, organizationId: user.organizationId }, orgs);
+    return getAccessibleOrgIds(
+      { role: user.role, organizationId: user.organizationId },
+      orgs,
+    );
   }
 }

@@ -27,7 +27,10 @@ export interface ScopeActor {
  * Assumes a 2-level hierarchy (root orgs have parentOrgId === null; a
  * sub-org's parent is always a root), matching the data model's constraint.
  */
-export function getAccessibleOrgIds(actor: ScopeActor, orgs: OrgNode[]): string[] {
+export function getAccessibleOrgIds(
+  actor: ScopeActor,
+  orgs: OrgNode[],
+): string[] {
   const childrenOf = (id: string): string[] =>
     orgs.filter((o) => o.parentOrgId === id).map((o) => o.id);
 

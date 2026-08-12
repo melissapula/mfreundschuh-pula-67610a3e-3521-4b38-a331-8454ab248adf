@@ -11,7 +11,8 @@ import { OrganizationEntity } from '../entities';
 @Injectable()
 export class OrganizationsService {
   constructor(
-    @InjectRepository(OrganizationEntity) private readonly repo: Repository<OrganizationEntity>,
+    @InjectRepository(OrganizationEntity)
+    private readonly repo: Repository<OrganizationEntity>,
   ) {}
 
   findAll(): Promise<OrganizationEntity[]> {

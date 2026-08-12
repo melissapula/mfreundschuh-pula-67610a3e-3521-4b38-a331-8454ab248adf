@@ -1,9 +1,18 @@
 <div
   role="img"
-  [attr.aria-label]="stats.done + ' of ' + stats.total + ' tasks complete, ' + stats.percent + ' percent'"
+  [attr.aria-label]="
+    stats.done +
+    ' of ' +
+    stats.total +
+    ' tasks complete, ' +
+    stats.percent +
+    ' percent'
+  "
   class="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800"
 >
-  <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+  <div
+    class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700"
+  >
     <div
       class="h-full rounded-full bg-emerald-500 transition-all"
       [style.width.%]="stats.percent"

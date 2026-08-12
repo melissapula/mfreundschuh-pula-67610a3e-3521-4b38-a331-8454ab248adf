@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AuditAction, AuthUser, CreateTaskDto, TaskStatus, UpdateTaskDto } from '@app/data';
+import {
+  AuditAction,
+  AuthUser,
+  CreateTaskDto,
+  TaskStatus,
+  UpdateTaskDto,
+} from '@app/data';
 import { TaskEntity } from '../entities';
 import { AuditService } from '../audit/audit.service';
 import { OrgScopeService } from '../organizations/org-scope.service';
@@ -9,7 +15,8 @@ import { OrgScopeService } from '../organizations/org-scope.service';
 @Injectable()
 export class TasksService {
   constructor(
-    @InjectRepository(TaskEntity) private readonly tasks: Repository<TaskEntity>,
+    @InjectRepository(TaskEntity)
+    private readonly tasks: Repository<TaskEntity>,
     private readonly orgScope: OrgScopeService,
     private readonly audit: AuditService,
   ) {}
@@ -64,7 +71,11 @@ export class TasksService {
     return tasks;
   }
 
-  async update(user: AuthUser, id: string, dto: UpdateTaskDto): Promise<TaskEntity> {
+  async update(
+    user: AuthUser,
+    id: string,
+    dto: UpdateTaskDto,
+  ): Promise<TaskEntity> {
     const task = await this.findAccessibleOrThrow(user, id);
     Object.assign(task, dto);
     const saved = await this.tasks.save(task);
@@ -105,7 +116,10 @@ export class TasksService {
    * scope" (rather than 403 for the latter) so a response code can't be used
    * to enumerate task IDs that belong to other organizations.
    */
-  private async findAccessibleOrThrow(user: AuthUser, id: string): Promise<TaskEntity> {
+  private async findAccessibleOrThrow(
+    user: AuthUser,
+    id: string,
+  ): Promise<TaskEntity> {
     const task = await this.tasks.findOne({ where: { id } });
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -120,7 +134,10 @@ export class TasksService {
         resourceType: 'task',
         resourceId: id,
         organizationId: user.organizationId,
-        metadata: { reason: 'task outside actor org scope', taskOrgId: task.organizationId },
+        metadata: {
+          reason: 'task outside actor org scope',
+          taskOrgId: task.organizationId,
+        },
       });
       throw new NotFoundException('Task not found');
     }

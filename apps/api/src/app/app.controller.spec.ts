@@ -15,7 +15,10 @@ describe('AppController', () => {
   describe('getHealth', () => {
     it('reports ok status', () => {
       const appController = app.get<AppController>(AppController);
-      expect(appController.getHealth()).toEqual({ status: 'ok', service: 'turbovets-task-api' });
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'turbovets-task-api',
+      });
     });
   });
 });

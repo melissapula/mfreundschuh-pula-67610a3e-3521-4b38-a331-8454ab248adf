@@ -1,4 +1,11 @@
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { TaskCategory, TaskStatus } from '../enums/task.enum';
 
 /**

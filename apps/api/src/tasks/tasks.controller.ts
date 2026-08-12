@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { AuthUser, CreateTaskDto, Permission, UpdateTaskDto } from '@app/data';
 import { CurrentUser, RequirePermission } from '@app/auth';
 import { TasksService } from './tasks.service';
@@ -21,7 +29,11 @@ export class TasksController {
 
   @Put(':id')
   @RequirePermission(Permission.TASK_UPDATE)
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateTaskDto) {
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateTaskDto,
+  ) {
     return this.tasks.update(user, id, dto);
   }
 

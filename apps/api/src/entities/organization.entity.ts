@@ -1,4 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity('organizations')
 export class OrganizationEntity {
@@ -12,7 +19,9 @@ export class OrganizationEntity {
   @Column({ type: 'uuid', nullable: true })
   parentOrgId!: string | null;
 
-  @ManyToOne(() => OrganizationEntity, (org) => org.children, { nullable: true })
+  @ManyToOne(() => OrganizationEntity, (org) => org.children, {
+    nullable: true,
+  })
   @JoinColumn({ name: 'parentOrgId' })
   parent?: OrganizationEntity | null;
 

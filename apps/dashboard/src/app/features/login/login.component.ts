@@ -42,7 +42,9 @@ export class LoginComponent {
         this.submitting.set(false);
         const status = err instanceof HttpErrorResponse ? err.status : null;
         this.errorMessage.set(
-          status === 401 ? 'Invalid email or password.' : 'Something went wrong. Please try again.',
+          status === 401
+            ? 'Invalid email or password.'
+            : 'Something went wrong. Please try again.',
         );
       },
     });

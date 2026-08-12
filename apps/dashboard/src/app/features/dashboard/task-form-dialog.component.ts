@@ -1,6 +1,19 @@
-import { Component, EventEmitter, Input, OnChanges, Output, inject } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  inject,
+} from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { CreateTaskInput, Task, TaskCategory, TaskStatus, UpdateTaskInput } from '@app/data/browser';
+import {
+  CreateTaskInput,
+  Task,
+  TaskCategory,
+  TaskStatus,
+  UpdateTaskInput,
+} from '@app/data/browser';
 
 @Component({
   selector: 'app-task-form-dialog',
