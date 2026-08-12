@@ -1,101 +1,519 @@
-# Mpula67610a3e35214b38A3318454ab248adf
+# Secure Task Management System
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A role-based, organization-scoped task manager built for the TurboVets full-stack
+coding challenge. NX monorepo: NestJS API + TypeORM/SQLite, Angular dashboard,
+two shared libraries.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+**Live demo:** _TODO — filled in after deploy (see [Deployment](#deployment))_
+**Video walkthrough:** _TODO — link here before submitting_
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/nest?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+---
 
-## Run tasks
+## Table of contents
 
-To run the dev server for your app, use:
+- [Setup instructions](#setup-instructions)
+- [Architecture overview](#architecture-overview)
+- [Data model](#data-model)
+- [Access control implementation](#access-control-implementation)
+- [API documentation](#api-documentation)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Tradeoffs and unfinished areas](#tradeoffs-and-unfinished-areas)
+- [Future considerations](#future-considerations)
 
-```sh
-npx nx serve api
+---
+
+## Setup instructions
+
+### Prerequisites
+
+- Node.js 20+ and npm
+- Nothing else — SQLite is file-based, no external database to install
+
+### 1. Install dependencies
+
+```bash
+npm install
 ```
 
-To create a production bundle:
+### 2. Configure environment
 
-```sh
-npx nx build api
+```bash
+cp .env.example .env
 ```
 
-To see all available targets to run for a project, run:
+The defaults work as-is for local dev. Variables:
 
-```sh
-npx nx show project api
+| Variable                 | Purpose                                                 | Dev default              |
+| ------------------------ | ------------------------------------------------------- | ------------------------ |
+| `JWT_SECRET`             | Signs/verifies access tokens                            | a placeholder dev string |
+| `JWT_EXPIRES_IN_SECONDS` | Access token lifetime, in seconds                       | `900` (15 minutes)       |
+| `DB_PATH`                | Path to the SQLite file, relative to the workspace root | `data/db.sqlite`         |
+| `API_PORT`               | Port the NestJS api listens on                          | `3000`                   |
+| `CORS_ORIGIN`            | Comma-separated origins allowed to call the api         | `http://localhost:4200`  |
+
+> `API_PORT`, not `PORT`: Nx auto-loads `.env` for **every** task it runs, including
+> `nx serve dashboard`. A generic `PORT` would leak into Angular's dev server too
+> and collide with the api on the same port — found this the hard way while testing.
+
+### 3. Seed demo data
+
+```bash
+npm run seed
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+Creates a small org tree and one user per role/org-position combination that
+matters for testing scope rules:
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+| Email                 | Role   | Organization            | Why this account exists                                  |
+| --------------------- | ------ | ----------------------- | -------------------------------------------------------- |
+| `owner@acme.test`     | OWNER  | Acme Corp (root)        | Sees/manages the entire tree                             |
+| `admin@acme.test`     | ADMIN  | Acme Corp (root)        | Sees/manages root + Engineering                          |
+| `admin.eng@acme.test` | ADMIN  | Acme Corp / Engineering | Scoped to Engineering only — proves no upward visibility |
+| `viewer@acme.test`    | VIEWER | Acme Corp / Engineering | Read-only, Engineering only                              |
 
-## Add new projects
+All four share the password `Password123!` (shown on the login screen too). The
+script is idempotent — re-run it any time to reset to this state.
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+### 4. Run the api and the dashboard
 
-Use the plugin's generator to create new projects.
+Two terminals, from the workspace root:
 
-To generate a new application, use:
-
-```sh
-npx nx g @nx/nest:app demo
+```bash
+npx nx serve api         # → http://localhost:3000/api
+npx nx serve dashboard   # → http://localhost:4200
 ```
 
-To generate a new library, use:
+Open `http://localhost:4200`, log in with any account above.
 
-```sh
-npx nx g @nx/node:lib mylib
+### 5. Run tests
+
+```bash
+npx nx test auth        # libs/auth — RBAC core logic (20 tests)
+npx nx test api          # apps/api (21 tests)
+npx nx test dashboard    # apps/dashboard (19 tests)
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### Pre-commit hooks
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Husky + lint-staged run ESLint (`--fix`) and Prettier on staged files on every
+commit. Installed automatically via `npm install` (the `prepare` script).
 
-## Set up CI!
+---
 
-### Step 1
+## Architecture overview
 
-To connect to Nx Cloud, run the following command:
+```
+apps/
+  api/         NestJS backend — TypeORM + SQLite, JWT auth, RBAC-guarded REST API
+  dashboard/   Angular frontend — signals-based state, Tailwind, drag-and-drop board
 
-```sh
-npx nx connect
+libs/
+  data/        Shared enums, wire-shape interfaces, and DTOs
+  auth/        RBAC core logic (role rank, permission mapping, org-scope resolution)
+               + the NestJS decorators/guards that wrap it
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+### Why this split
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+**`libs/data`** is the single source of truth for what a `Task`, `Organization`,
+`User`, `Role`, `Permission`, etc. _look like_ on the wire. Both apps import from
+here, so the frontend and backend can never quietly drift apart on field names or
+enum values — a `Task.status` typo would be a compile error, not a runtime bug
+discovered in QA.
 
-### Step 2
+**`libs/auth`** is the single source of truth for what those shapes _mean_ —
+role inheritance, which permissions a role has, and which org IDs an actor can
+reach. This is the highest-stakes code in the whole assessment (RBAC correctness
+is the top-weighted evaluation criterion), so it's built as plain, dependency-free
+TypeScript functions (`roleAtLeast`, `roleHasPermission`, `getAccessibleOrgIds`)
+with NestJS decorators/guards (`@RequirePermission`, `PermissionsGuard`,
+`@Public`) as a thin wrapper on top. The pure functions are unit-tested directly,
+with no Nest bootstrap, no mocking a framework — just inputs and outputs.
 
-Use the following command to configure a CI workflow for your workspace:
+### The `/browser` and `/core` split
 
-```sh
-npx nx g ci-workflow
+Both shared libs actually have **two** entry points each, and this was not the
+original plan — it's a fix for a real bug I found while wiring the frontend up
+(see [Tradeoffs](#tradeoffs-and-unfinished-areas) for the full story). Short
+version: `libs/data`'s DTO classes carry `class-validator` decorators for
+NestJS's `ValidationPipe`, and `libs/auth`'s guards import `@nestjs/common`.
+Decorator metadata isn't tree-shakeable, so importing the "everything" barrel
+from Angular pulled the whole `class-validator` + `@nestjs/*` dependency graph
+into the browser bundle — ~70KB and dozens of build warnings for code the
+frontend never touches.
+
+- `@app/data` / `@app/auth` — the full barrel, everything included. **apps/api**
+  uses these.
+- `@app/data/browser` / `@app/auth/core` — framework-free subset (enums, plain
+  interfaces, and the pure RBAC functions only). **apps/dashboard** uses these
+  exclusively. A grep of the built output confirms zero `class-validator` or
+  `@nestjs/*` code reaches the browser bundle.
+
+This means `roleHasPermission()` — the exact function `PermissionsGuard` calls
+server-side — also drives which buttons the Angular UI shows. One
+implementation, two consumers, not two independently-maintained copies that
+could drift.
+
+### apps/api module layout
+
+```
+src/
+  entities/        TypeORM entities (Organization, User, Task, AuditLog)
+  auth/             Login, JWT strategy/guard, bcrypt
+  organizations/    Internal org-tree access + OrgScopeService (no public endpoints)
+  tasks/            CRUD, permission + org-scope enforcement
+  audit/            Write-side (AuditService.log) + read-side (GET /audit-log)
+  seed.ts           Standalone demo-data script (not part of the Nest app)
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+`OrgScopeService` lives in `organizations/`, not `tasks/`, even though it's
+conceptually closest to tasks — both `TasksModule` and `AuditModule` need it
+(audit log visibility is scoped the same way task visibility is), and putting it
+in either one would create a circular module import.
 
-## Install Nx Console
+### apps/dashboard structure
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+```
+src/app/
+  core/
+    auth/    AuthService (signals), interceptor, route guards
+    api/     Thin HTTP wrappers (TasksApiService, AuditApiService)
+    state/   TasksStore (signals-based store), ThemeService
+  features/
+    login/
+    dashboard/    Task board, task-card, task-form dialog, completion chart
+    audit-log/
+```
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+**State management:** plain Angular signals + `computed()` in a single
+`TasksStore` injectable, not NgRx. At this app's size, actions/reducers/effects
+would be ceremony without payoff — a signal for the source-of-truth array and a
+few `computed()` views (filtered, grouped-by-status, completion stats) give the
+same "derived state updates automatically" behavior NgRx provides, with far
+less code to read.
 
-## Useful links
+---
 
-Learn more:
+## Data model
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/nest?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```mermaid
+erDiagram
+    ORGANIZATION ||--o{ ORGANIZATION : "parent of"
+    ORGANIZATION ||--o{ USER : "has members"
+    ORGANIZATION ||--o{ TASK : "scopes"
+    USER ||--o{ TASK : "owns"
+    USER ||--o{ AUDIT_LOG : "acts as"
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+    ORGANIZATION {
+        uuid id PK
+        string name
+        uuid parentOrgId FK "null = root org"
+    }
+    USER {
+        uuid id PK
+        string email UK
+        string passwordHash "bcrypt"
+        string role "OWNER | ADMIN | VIEWER"
+        uuid organizationId FK
+    }
+    TASK {
+        uuid id PK
+        string title
+        string description
+        string category "WORK | PERSONAL | OTHER"
+        string status "TODO | IN_PROGRESS | DONE"
+        int order "drag-and-drop position"
+        uuid ownerId FK
+        uuid organizationId FK "set from owner's org, immutable"
+        datetime createdAt
+        datetime updatedAt
+    }
+    AUDIT_LOG {
+        uuid id PK
+        uuid actorUserId FK
+        string actorEmail
+        string action
+        string resourceType
+        uuid resourceId "nullable"
+        uuid organizationId FK "nullable"
+        json metadata "nullable"
+        datetime createdAt
+    }
+```
+
+- **Organization** is self-referential and capped at 2 levels by application
+  logic (not a DB constraint): `parentOrgId IS NULL` marks a root; any org whose
+  parent is itself a sub-org would violate the model, so the seed script (the
+  only thing that creates orgs today) never does that.
+- **Task.organizationId** is set once, at creation, from the creating user's own
+  `organizationId` — never from client input. This is what makes org-scoping
+  trustworthy: a task can't be created "into" another org by sending an
+  arbitrary `organizationId` in the request body (the DTO doesn't even accept
+  one).
+- **AuditLog.actorUserId** is an empty string, not null, when a login attempt
+  fails against an email that matches no account — there's no real actor to
+  attribute it to, but the attempted email is still recorded in `actorEmail` for
+  security visibility.
+
+---
+
+## Access control implementation
+
+RBAC here is **two independent axes**, not one role check:
+
+### Axis 1 — Role → capability (what an actor can do)
+
+Rank-based inheritance: **Owner (3) > Admin (2) > Viewer (1)**. Each tier's
+permission set is defined as the tier below it, plus what that role adds — the
+inheritance is structural (`ADMIN_PERMISSIONS = [...VIEWER_PERMISSIONS, ...]`),
+not just a comment claiming it exists.
+
+| Role   | Permissions                                                 |
+| ------ | ----------------------------------------------------------- |
+| VIEWER | `TASK_READ`                                                 |
+| ADMIN  | + `TASK_CREATE`, `TASK_UPDATE`, `TASK_DELETE`, `AUDIT_READ` |
+| OWNER  | same set as Admin — see note below                          |
+
+**Why Owner has no Admin+1 permission type:** the assessment's endpoint surface
+has no org/user-management API, so there's nothing extra for Owner to _do_ in
+this scope. The inheritance mechanism is still real and tested (`roleAtLeast`,
+rank comparison) — it just isn't independently observable at this endpoint
+count. Owner's actual distinction is entirely on the second axis:
+
+### Axis 2 — Org position → scope (what an actor can see/touch)
+
+`getAccessibleOrgIds(actor, orgs)` in `libs/auth/src/lib/org-scope.ts`:
+
+- **Viewer** — exactly their own org node. No breadth at all.
+- **Admin** — their own org node _plus its direct sub-orgs_ (downward only — an
+  Admin seated at a sub-org cannot see the parent org's tasks).
+- **Owner** — the _entire tree_ containing their org (root + all sub-orgs),
+  regardless of which node they personally sit in.
+
+This is what makes Owner genuinely "have full org control" as the spec asks
+for, while Admin stays strictly narrower — a real, testable difference, not
+just a label. It's demonstrated directly by the seed data:
+`admin.eng@acme.test` (Admin, seated at the Engineering sub-org) cannot see
+Acme Corp root's tasks, while `admin@acme.test` (Admin, seated at the root)
+can see both.
+
+### How the two axes combine, end to end
+
+1. **Authentication** — `POST /auth/login` verifies the bcrypt hash, issues a
+   JWT whose payload is `{ sub, email, role, organizationId }`. `JwtAuthGuard`
+   is registered globally (`APP_GUARD`), so every route requires a valid token
+   by default; `@Public()` is the explicit, auditable opt-out (used only by
+   the login route itself).
+2. **Role/permission check** — `@RequirePermission(Permission.TASK_UPDATE)` on
+   a route + `PermissionsGuard` reading it. This runs _after_ `JwtAuthGuard`
+   (guard registration order matters — see `AppModule`), so `request.user` is
+   already populated. A Viewer never reaches `TasksController.update()` at all.
+3. **Ownership/org-scope check** — `PermissionsGuard` only knows the actor's
+   _role_, not which org a specific `:id` belongs to, so resource-specific
+   scoping happens in `TasksService.findAccessibleOrThrow()`: fetch the task,
+   compute the actor's accessible org IDs, and check membership. **Returns 404
+   for both "task doesn't exist" and "task exists but is outside your org
+   scope"** — deliberately not 403 for the latter, so a response-code
+   difference can't be used to enumerate which task IDs belong to other
+   organizations.
+4. **Audit logging** — every create/update/delete/list, every login and login
+   failure, and every access-denial writes an `AuditLog` row (persisted to
+   SQLite, mirrored to the console). Denials from `PermissionsGuard`
+   (role-level) and from `TasksService` (org-scope-level) are logged at the
+   point each decision is actually made, not centrally — each layer has the
+   context to explain _why_ it denied, right where it denies.
+5. **GET /audit-log** is itself scoped by the same `getAccessibleOrgIds` rule
+   task visibility uses — an Admin only sees audit entries for orgs within
+   their own reach, not every org in the system.
+
+### Ownership
+
+Every task records `ownerId` and an immutable `organizationId` at creation.
+Mutation rights are gated by **role + org-scope**, not "did I create this" —
+the spec is explicit that Viewers must not mutate, even their own tasks, so
+ownership isn't a bypass. Ownership is used for audit attribution and the
+"created by" context in the data model; the org-scope check is structurally
+tied to it (a task's org is always its owner's org at creation time), which is
+what makes org-scoping trustworthy rather than just self-reported.
+
+---
+
+## API documentation
+
+Base URL: `http://localhost:3000/api`. All routes except `/auth/login` require
+`Authorization: Bearer <token>`.
+
+### `POST /auth/login`
+
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@acme.test","password":"Password123!"}'
+```
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "user": { "sub": "…", "email": "admin@acme.test", "role": "ADMIN", "organizationId": "…" }
+}
+```
+
+`401 Unauthorized` on any bad credential — deliberately the same response for
+"no such email" and "wrong password" (see [Data model](#data-model)).
+
+### `POST /tasks`
+
+Requires `TASK_CREATE` (Admin, Owner).
+
+```bash
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"title":"Review Q3 numbers","category":"WORK"}'
+```
+
+```json
+{ "id": "…", "title": "Review Q3 numbers", "category": "WORK", "status": "TODO", "order": 0, "ownerId": "…", "organizationId": "…", "createdAt": "…", "updatedAt": "…" }
+```
+
+### `GET /tasks`
+
+Requires `TASK_READ` (all roles). Returns only tasks within the caller's
+accessible org scope — see [Access control](#access-control-implementation).
+
+```bash
+curl http://localhost:3000/api/tasks -H "Authorization: Bearer $TOKEN"
+```
+
+### `PUT /tasks/:id`
+
+Requires `TASK_UPDATE` (Admin, Owner) **and** the task must be within the
+caller's org scope (404 otherwise).
+
+```bash
+curl -X PUT http://localhost:3000/api/tasks/$TASK_ID \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"status":"DONE"}'
+```
+
+### `DELETE /tasks/:id`
+
+Requires `TASK_DELETE` (Admin, Owner) + org scope, same rule as `PUT`. Returns
+`204 No Content`.
+
+### `GET /audit-log`
+
+Requires `AUDIT_READ` (Admin, Owner only). Scoped to the caller's accessible
+orgs, newest first, capped at 200 rows.
+
+```bash
+curl http://localhost:3000/api/audit-log -H "Authorization: Bearer $TOKEN"
+```
+
+```json
+[{ "id": "…", "actorUserId": "…", "actorEmail": "admin@acme.test", "action": "TASK_UPDATE", "resourceType": "task", "resourceId": "…", "organizationId": "…", "metadata": { "fields": ["status"] }, "createdAt": "…" }]
+```
+
+---
+
+## Testing
+
+60 tests total, weighted toward the highest-graded area per the assessment
+brief (RBAC/auth correctness over frontend coverage):
+
+| Project          | Tests | What's covered                                                                                                                                                                                                                                                                                                                   |
+| ---------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `libs/auth`      | 20    | Role rank/inheritance, permission mapping, org-scope resolution (all pure functions, no framework), `PermissionsGuard`                                                                                                                                                                                                           |
+| `apps/api`       | 21    | `AuthService` (credential validation, token issuance), `JwtAuthGuard`'s `@Public()` bypass, `OrgScopeService`, `AuditService`, and `TasksService` — the centerpiece: proves `organizationId`/`ownerId` always derive from the authenticated actor, cross-org mutation returns 404 + logs `ACCESS_DENIED`, and org-scoped listing |
+| `apps/dashboard` | 19    | `TasksStore`'s filter/sort/grouping logic, `AuthService` session persistence, `authInterceptor` (including a real bug it caught — see below)                                                                                                                                                                                     |
+
+Also manually smoke-tested end-to-end in a live browser across all 4 seeded
+roles: login, org-scoped task visibility (including the sub-org Admin's lack
+of upward visibility), role-gated mutation, drag-and-drop persistence, audit
+log visibility and role-gating, dark mode, and keyboard shortcuts.
+
+**A real bug this caught:** the `authInterceptor` test found that
+`inject(Router)` was called inside an RxJS `catchError` callback, which runs
+outside Angular's synchronous injection context — `inject()` there throws, so
+a 401 response would silently fail to redirect to `/login` in the real app.
+Fixed by injecting `Router` at the top of the interceptor, same pattern as
+`AuthService`.
+
+---
+
+## Deployment
+
+_TODO — filled in once deployed: API host (Fly.io/Render), dashboard host
+(Cloudflare Pages), and the live URLs above._
+
+---
+
+## Tradeoffs and unfinished areas
+
+Collected as they came up during the build, not reconstructed afterward:
+
+- **`synchronize: true` instead of TypeORM migrations.** Fast local iteration;
+  a real deployment would use migrations so schema changes are reviewed and
+  reversible. `TODO(tradeoff)` comment left at the point of use in
+  `AppModule`.
+- **No user registration or user-management endpoints.** The spec's endpoint
+  list has none, so demo accounts come from the seed script only. Real
+  onboarding (self-registration, invites, org creation) is out of scope here.
+- **Owner has no Admin+1 permission type**, only wider org scope — see
+  [Access control](#access-control-implementation) for the reasoning. If a
+  future endpoint needed an Owner-only capability, `OWNER_PERMISSIONS` in
+  `libs/auth/src/lib/role-permissions.ts` is already its own array, ready for
+  an addition.
+- **Audit log excludes entries with no organization** (a login attempt against
+  an email matching no account has nowhere to scope to). A true system-wide
+  audit view for these would need a separate "global" permission tier not
+  built for this assessment. `TODO(tradeoff)` comment at the point of use.
+- **JWT stored in `localStorage`**, not an `httpOnly` cookie — simpler for a
+  pure Bearer-token API with no server-rendered pages, but XSS-exposed in a
+  way a cookie wouldn't be. Documented, not fixed — see
+  [Future considerations](#future-considerations).
+- **Drag-and-drop reordering makes one `PUT` per changed task**, not a single
+  batch-reorder call. Fine at the seed data's scale; a real reorder endpoint
+  (`PATCH /tasks/reorder` accepting an ordered ID list) would be one round
+  trip instead of N.
+- **No optimistic locking / conflict detection.** Two users editing the same
+  task concurrently is last-write-wins. Not addressed.
+- **No pagination** on `GET /tasks` or `GET /audit-log` — capped at 200 rows
+  for the audit log, unbounded for tasks. Fine at demo scale.
+- **The `apps/dashboard` window-resize/mobile-layout check wasn't verified in
+  an actual live browser** — the Tailwind classes are written mobile-first
+  (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`, `flex-wrap` header, etc.) and I
+  believe they're correct, but a browser-automation tool limitation in my dev
+  environment prevented resizing the viewport to confirm visually. Worth a
+  30-second manual check before recording the video.
+
+---
+
+## Future considerations
+
+As asked for in the assessment brief:
+
+- **Advanced role delegation** — today's three roles are fixed and global per
+  organization. A production system would likely want per-org custom roles or
+  delegated admin scopes (e.g. "Admin for Engineering only" as an explicit
+  grant, not implied by where a user's `organizationId` happens to point).
+- **JWT refresh tokens** — the 15-minute access token has no refresh flow;
+  the user just has to log in again. A refresh token (long-lived, rotated,
+  stored server-side or in an `httpOnly` cookie) would let the access token
+  stay short without constant re-login.
+- **CSRF protection** — not currently needed, since auth is a Bearer token in
+  a header (not a cookie), which isn't automatically attached by the browser
+  to cross-site requests the way a cookie is. This changes if the JWT
+  storage move above (to an `httpOnly` cookie) ever happens — CSRF protection
+  would become necessary at that point, not before.
+- **RBAC caching** — `roleHasPermission`/`getAccessibleOrgIds` run fresh on
+  every request against small in-memory maps and an org-table query. Fine at
+  this scale; at volume, the org tree (which changes rarely) is an obvious
+  cache candidate, keyed by root org ID with short TTL or explicit
+  invalidation on org mutation.
+- **Efficient scaling of permission checks** — `OrgScopeService` loads the
+  _entire_ organizations table on every scoped request
+  (`OrganizationsService.findAll()`) to compute one actor's accessible IDs.
+  Fine for a handful of orgs; at real scale this should be a targeted query
+  (fetch the actor's org + its parent/children directly) rather than loading
+  everything and filtering in memory.
