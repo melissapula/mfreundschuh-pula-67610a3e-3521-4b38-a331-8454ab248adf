@@ -46,3 +46,12 @@ Thumbs.db
 
 .nx/polygraph
 .angular
+
+# env / local secrets
+.env
+.env.local
+
+# local sqlite database files
+data/*.sqlite
+data/*.sqlite-journal
+*.db

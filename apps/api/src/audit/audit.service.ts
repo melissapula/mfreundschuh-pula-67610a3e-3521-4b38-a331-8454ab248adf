@@ -1,0 +1,40 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AuditAction } from '@app/data';
+import { AuditLogEntity } from '../entities';
+
+export interface AuditLogInput {
+  /** Empty string when the actor could not be identified (e.g. login with an unrecognized email). */
+  actorUserId: string;
+  actorEmail: string;
+  action: AuditAction;
+  resourceType: string;
+  resourceId: string | null;
+  organizationId: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+/**
+ * Persists to SQLite (queryable by GET /audit-log) and mirrors to the
+ * console — exceeds the spec's "console or file is sufficient" bar
+ * intentionally, since the endpoint needs structured, filterable data.
+ */
+@Injectable()
+export class AuditService {
+  private readonly logger = new Logger('AuditLog');
+
+  constructor(
+    @InjectRepository(AuditLogEntity) private readonly repo: Repository<AuditLogEntity>,
+  ) {}
+
+  async log(input: AuditLogInput): Promise<void> {
+    const entry = this.repo.create({ ...input, metadata: input.metadata ?? null });
+    await this.repo.save(entry);
+    this.logger.log(
+      `${input.action} actor=${input.actorEmail || '(unknown)'} resource=${input.resourceType}:${
+        input.resourceId ?? '-'
+      } org=${input.organizationId ?? '-'}`,
+    );
+  }
+}

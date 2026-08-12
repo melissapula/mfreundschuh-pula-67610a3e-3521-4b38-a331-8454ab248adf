@@ -12,10 +12,10 @@ describe('AppController', () => {
     }).compile();
   });
 
-  describe('getData', () => {
-    it('should return "Hello API"', () => {
+  describe('getHealth', () => {
+    it('reports ok status', () => {
       const appController = app.get<AppController>(AppController);
-      expect(appController.getData()).toEqual({message: 'Hello API'});
+      expect(appController.getHealth()).toEqual({ status: 'ok', service: 'turbovets-task-api' });
     });
   });
 });
