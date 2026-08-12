@@ -4,7 +4,8 @@ A role-based, organization-scoped task manager built for the TurboVets full-stac
 coding challenge. NX monorepo: NestJS API + TypeORM/SQLite, Angular dashboard,
 two shared libraries.
 
-**Live demo:** _TODO — filled in after deploy (see [Deployment](#deployment))_
+**Live demo:** https://turbovets-task-dashboard-missa.pages.dev (api:
+https://turbovets-task-api-missa.fly.dev/api) — demo accounts below
 **Video walkthrough:** _TODO — link here before submitting_
 
 ---
@@ -443,8 +444,32 @@ Fixed by injecting `Router` at the top of the interceptor, same pattern as
 
 ## Deployment
 
-_TODO — filled in once deployed: API host (Fly.io/Render), dashboard host
-(Cloudflare Pages), and the live URLs above._
+- **API** — Docker image on [Fly.io](https://fly.io), `apps/api/Dockerfile`
+  (multi-stage: builds via `nx build api`, native `better-sqlite3` compiled
+  in the runtime stage). A persistent Fly volume mounted at `/data` holds the
+  SQLite file across restarts/redeploys. Config in `fly.toml` at the
+  workspace root. `min_machines_running = 1` — deliberately always-on for
+  the duration of this assessment, so a reviewer never sees a cold-start
+  delay; easy to flip back to auto-stop afterward.
+- **Dashboard** — static build on Cloudflare Pages (`apps/dashboard`'s
+  production build, `environment.prod.ts` points at the Fly URL above).
+  `public/_redirects` (`/* /index.html 200`) makes client-side routing work
+  on direct navigation/refresh, not just in-app links.
+- **Seeding the live database** — `apps/api/src/seed.ts` is built as its own
+  self-contained webpack bundle (`nx run api:build-seed`, see
+  `webpack.seed.config.js`) and shipped in the same Docker image as `seed.js`,
+  so it can be re-run against the live volume any time via
+  `fly ssh console -C "node seed.js"` without needing a separate build or
+  redeploy.
+
+**A real deployment bug this surfaced:** TypeORM loads its SQLite driver via
+a dynamic `require('better-sqlite3')` keyed off a config string, not a static
+import — so webpack's dependency analysis (and its `generatePackageJson`
+output) never saw it, and the first deploy would have shipped without it
+installed. Caught by inspecting the generated `dist/apps/api/package.json`
+before deploying, not by a failed deploy. Fixed via
+`NxAppWebpackPlugin`'s `runtimeDependencies` option (same fix needed for
+`dotenv`, imported as `dotenv/config` — a subpath the same heuristic misses).
 
 ---
 

@@ -1,0 +1,26 @@
+app = "turbovets-task-api-missa"
+primary_region = "ord"
+
+[build]
+  dockerfile = "apps/api/Dockerfile"
+
+[env]
+  DB_PATH = "/data/db.sqlite"
+  JWT_EXPIRES_IN_SECONDS = "900"
+  CORS_ORIGIN = "http://localhost:4200,https://turbovets-task-dashboard-missa.pages.dev,https://master.turbovets-task-dashboard-missa.pages.dev"
+
+[[mounts]]
+  source = "data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

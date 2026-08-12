@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+tmp
+.nx
+.git
+.angular
+.husky
+.vscode
+data/*.sqlite
+data/*.sqlite-journal
+.env
+.env.local
