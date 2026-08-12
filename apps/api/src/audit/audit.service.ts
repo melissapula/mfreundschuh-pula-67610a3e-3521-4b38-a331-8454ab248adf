@@ -37,4 +37,23 @@ export class AuditService {
       } org=${input.organizationId ?? '-'}`,
     );
   }
+
+  /**
+   * Scoped the same way task visibility is: an Admin/Owner only sees audit
+   * entries for orgs within their own accessible scope. Entries with no org
+   * (e.g. a failed login for an email that matched no user) are excluded —
+   * TODO(tradeoff): a true system-wide audit view for these would need a
+   * separate "global" permission tier we didn't build for this assessment.
+   */
+  findByOrgIds(orgIds: string[]): Promise<AuditLogEntity[]> {
+    if (orgIds.length === 0) {
+      return Promise.resolve([]);
+    }
+    return this.repo
+      .createQueryBuilder('log')
+      .where('log.organizationId IN (:...orgIds)', { orgIds })
+      .orderBy('log.createdAt', 'DESC')
+      .take(200)
+      .getMany();
+  }
 }

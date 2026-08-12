@@ -10,6 +10,7 @@ import { AuthModule } from '../auth/auth.module';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuditModule } from '../audit/audit.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
+import { TasksModule } from '../tasks/tasks.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { OrganizationsModule } from '../organizations/organizations.module';
     AuthModule,
     AuditModule,
     OrganizationsModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [
