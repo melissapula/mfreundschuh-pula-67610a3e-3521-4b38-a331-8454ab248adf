@@ -2,7 +2,9 @@
   "name": "@mfreundschuh-pula-67610a3e-3521-4b38-a331-8454ab248adf/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "seed": "ts-node -r reflect-metadata --project apps/api/tsconfig.app.json apps/api/src/seed.ts"
+  },
   "private": true,
   "dependencies": {
     "@angular/common": "~22.0.4",
@@ -60,6 +62,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@typescript-eslint/utils": "^8.58.0",
     "angular-eslint": "^22.0.0",
+    "dotenv": "^17.4.2",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "jest": "~30.3.0",
