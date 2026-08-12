@@ -1,4 +1,4 @@
-import { Role } from '@app/data';
+import { Role } from '@app/data/browser';
 
 /**
  * Numeric rank implements role inheritance: Owner > Admin > Viewer.

@@ -1,4 +1,4 @@
-import { Permission, Role } from '@app/data';
+import { Permission, Role } from '@app/data/browser';
 
 /**
  * Each tier is defined as the tier below it plus what that role adds —

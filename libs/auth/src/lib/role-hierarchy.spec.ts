@@ -1,4 +1,4 @@
-import { Role } from '@app/data';
+import { Role } from '@app/data/browser';
 import { roleAtLeast, roleRank } from './role-hierarchy';
 
 describe('role-hierarchy', () => {

@@ -1,4 +1,4 @@
-import { Permission, Role } from '@app/data';
+import { Permission, Role } from '@app/data/browser';
 import { permissionsForRole, roleHasPermission } from './role-permissions';
 
 describe('role-permissions', () => {

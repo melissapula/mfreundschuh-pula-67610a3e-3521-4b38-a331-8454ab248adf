@@ -1,0 +1,119 @@
+<div class="min-h-screen bg-slate-50 dark:bg-slate-900">
+  <header class="border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <h1 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Secure Task Manager</h1>
+
+      <div class="flex flex-wrap items-center gap-3 text-sm">
+        <span class="text-slate-600 dark:text-slate-300">{{ auth.user()?.email }}</span>
+        <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">
+          {{ auth.role() }}
+        </span>
+
+        @if (canViewAudit()) {
+          <a routerLink="/audit-log" class="text-indigo-600 hover:underline dark:text-indigo-400">Audit Log</a>
+        }
+
+        <button
+          type="button"
+          (click)="theme.toggle()"
+          class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+          title="Toggle dark mode"
+        >
+          {{ theme.theme() === 'dark' ? '☀️ Light' : '🌙 Dark' }}
+        </button>
+
+        <button
+          type="button"
+          (click)="logout()"
+          class="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+        >
+          Log out
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-6">
+    <div class="mb-4">
+      <app-completion-chart [stats]="store.completionStats()" />
+    </div>
+
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <input
+        #searchInput
+        type="search"
+        placeholder="Search titles… (press / to focus)"
+        (input)="store.setSearch(searchInput.value)"
+        class="w-56 rounded-md border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+      />
+
+      <select
+        (change)="store.setCategoryFilter($any($event.target).value)"
+        class="rounded-md border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+      >
+        @for (category of categories; track category) {
+          <option [value]="category">{{ category === 'ALL' ? 'All categories' : category }}</option>
+        }
+      </select>
+
+      <select
+        (change)="store.setSortBy($any($event.target).value)"
+        class="rounded-md border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+      >
+        <option value="order">Sort: manual order</option>
+        <option value="title">Sort: title</option>
+        <option value="createdAt">Sort: newest first</option>
+      </select>
+
+      @if (canMutate()) {
+        <button
+          type="button"
+          (click)="openCreate()"
+          class="ml-auto rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+          title="Press n for new task"
+        >
+          + New task
+        </button>
+      }
+    </div>
+
+    @if (store.loading()) {
+      <p class="text-sm text-slate-500 dark:text-slate-400">Loading tasks…</p>
+    } @else if (store.error()) {
+      <p class="text-sm text-red-600 dark:text-red-400">{{ store.error() }}</p>
+    } @else {
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @for (column of columns; track column.status) {
+          <div class="flex flex-col rounded-lg bg-slate-100 p-3 dark:bg-slate-800/50">
+            <h2 class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
+              {{ column.label }}
+              <span class="text-slate-400">({{ store.byStatus()[column.status].length }})</span>
+            </h2>
+
+            <div
+              cdkDropList
+              [id]="column.status"
+              [cdkDropListData]="store.byStatus()[column.status]"
+              [cdkDropListConnectedTo]="columnIds"
+              (cdkDropListDropped)="onDrop($event, column.status)"
+              class="flex min-h-[100px] flex-1 flex-col gap-2"
+            >
+              @for (task of store.byStatus()[column.status]; track task.id) {
+                <app-task-card
+                  [task]="task"
+                  [canMutate]="canMutate()"
+                  (edit)="openEdit($event)"
+                  (remove)="deleteTask($event)"
+                />
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </main>
+
+  @if (showForm()) {
+    <app-task-form-dialog [task]="editingTask()" (save)="saveTask($event)" (close)="closeForm()" />
+  }
+</div>

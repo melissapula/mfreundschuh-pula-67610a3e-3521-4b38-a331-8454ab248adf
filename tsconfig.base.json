@@ -16,7 +16,9 @@
     "strict": false,
     "paths": {
       "@app/data": ["./libs/data/src/index.ts"],
-      "@app/auth": ["./libs/auth/src/index.ts"]
+      "@app/data/browser": ["./libs/data/src/browser.ts"],
+      "@app/auth": ["./libs/auth/src/index.ts"],
+      "@app/auth/core": ["./libs/auth/src/core.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

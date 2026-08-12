@@ -1,4 +1,4 @@
-import { Role } from '@app/data';
+import { Role } from '@app/data/browser';
 import { getAccessibleOrgIds, OrgNode } from './org-scope';
 
 describe('org-scope', () => {

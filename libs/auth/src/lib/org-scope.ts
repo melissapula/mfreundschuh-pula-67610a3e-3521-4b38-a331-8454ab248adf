@@ -1,4 +1,4 @@
-import { Role } from '@app/data';
+import { Role } from '@app/data/browser';
 
 /** Minimal org shape this module needs — callers pass in whatever they have (a TypeORM entity works fine). */
 export interface OrgNode {
