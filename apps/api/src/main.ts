@@ -9,8 +9,11 @@ async function bootstrap() {
   app.use(helmet());
 
   app.enableCors({
+    // No `credentials: true` — auth is a Bearer token in a header, sent
+    // explicitly by our own HttpClient code, not a cookie the browser
+    // attaches automatically. Credentialed CORS isn't needed and would
+    // only widen the attack surface for no benefit here.
     origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:4200'],
-    credentials: true,
   });
 
   app.useGlobalPipes(

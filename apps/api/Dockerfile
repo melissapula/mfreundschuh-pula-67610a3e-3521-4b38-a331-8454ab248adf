@@ -9,16 +9,28 @@ RUN npx nx build api --configuration=production
 RUN npx nx run api:build-seed
 
 # ---
+# Separate stage just to compile native modules (better-sqlite3, bcrypt).
+# Nothing from this stage's apt packages ends up in the final image — only
+# its already-compiled node_modules gets copied into `runtime` below.
+
+FROM node:24-bookworm-slim AS deps
+WORKDIR /app
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /workspace/dist/apps/api/package.json /workspace/dist/apps/api/package-lock.json ./
+RUN npm ci --omit=dev
+
+# ---
 
 FROM node:24-bookworm-slim AS runtime
 WORKDIR /app
 
-# python3/make/g++: better-sqlite3 is a native module — node-gyp needs these
-# to compile it if no prebuilt binary matches this image's platform/Node
-# version. gosu: lets the entrypoint drop from root to an unprivileged user
-# after fixing up the mounted volume's ownership (see entrypoint.sh).
+# gosu: lets the entrypoint drop from root to an unprivileged user after
+# fixing up the mounted volume's ownership (see entrypoint.sh). No compiler
+# toolchain here — that only ever existed in the discarded `deps` stage.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 make g++ gosu \
+  && apt-get install -y --no-install-recommends gosu \
   && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system --gid 1001 nodejs \
@@ -28,10 +40,9 @@ RUN groupadd --system --gid 1001 nodejs \
 
 COPY --from=builder /workspace/dist/apps/api ./
 COPY --from=builder /workspace/dist/apps/api-seed/main.js ./seed.js
+COPY --from=deps /app/node_modules ./node_modules
 COPY apps/api/entrypoint.sh /entrypoint.sh
-RUN npm ci --omit=dev \
-  && chmod +x /entrypoint.sh \
-  && chown -R nestjs:nodejs /app
+RUN chmod +x /entrypoint.sh && chown -R nestjs:nodejs /app
 
 ENV NODE_ENV=production
 EXPOSE 3000

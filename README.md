@@ -378,6 +378,40 @@ with full org control and alter the seeded data. Worth re-seeding
 (`npm run seed`, or `fly ssh console -C "node seed.js"` against the live
 instance) before a demo if the data's gotten messy.
 
+### Second pass: three more findings
+
+A follow-up review turned up three more (lower-severity) gaps. Two are fixed;
+one is intentionally deferred rather than shipped half-verified:
+
+- **CORS `credentials: true` was unnecessary** — auth is a Bearer token sent
+  explicitly by our own `HttpClient` code, not a cookie the browser attaches
+  automatically, so credentialed CORS added attack surface for no benefit.
+  Removed from `main.ts`.
+- **Docker image shipped its C compiler toolchain** — `python3`/`make`/`g++`
+  (needed only to compile `better-sqlite3` and `bcrypt`'s native bindings)
+  were installed directly in the runtime stage, so they shipped in the final
+  image. Split into a separate `deps` build stage that's discarded after
+  `npm ci` — only its already-compiled `node_modules` gets copied into the
+  final image. Verified: image size dropped from 185MB to 91MB, and DB
+  read/write (login, task create) both still work against the live volume
+  after the rebuild.
+- **No security headers on the Cloudflare Pages frontend** — added a
+  `public/_headers` file (same mechanism as `_redirects`). Five headers ship
+  and are verified live: `X-Frame-Options`, `X-Content-Type-Options`,
+  `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security`. A
+  sixth, **Content-Security-Policy, is deliberately not shipped**: adding it
+  reliably broke Tailwind's styling in testing (page rendered with correct
+  DOM/text but zero applied styles), and debugging why consumed a lot of
+  back-and-forth without a conclusive root cause — the failure pattern didn't
+  fully match how CSP directives are specified to behave (e.g. a single
+  `style-src` directive worked alone, but adding directives that shouldn't
+  interact with it at all, like `script-src`, broke it too), and some earlier
+  test results turned out to be a stale-cache artifact on the production
+  domain rather than a real signal, which muddied the diagnosis further.
+  Rather than ship a CSP of uncertain correctness — or worse, one that's
+  silently broken — this is left as a documented follow-up. The api's own
+  `helmet`-issued CSP (see above) is unaffected and live.
+
 ---
 
 ## API documentation
