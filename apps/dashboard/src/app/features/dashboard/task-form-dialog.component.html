@@ -7,20 +7,27 @@
 <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
 <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    (click)="closed.emit()"
+    (click)="requestDismiss()"
 >
     <!--
         This click handler only stops propagation to the backdrop above; it
         doesn't itself perform an action, so no keyboard equivalent applies.
+        cdkTrapFocus keeps Tab cycling inside the panel while it's open, and
+        with autoCapture also moves focus to the first field on open and
+        back to whatever triggered the dialog when it closes.
     -->
     <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -->
     <div
         class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-slate-800"
         role="dialog"
         aria-modal="true"
+        aria-labelledby="task-dialog-title"
+        cdkTrapFocus
+        [cdkTrapFocusAutoCapture]="true"
         (click)="$event.stopPropagation()"
     >
         <h2
+            id="task-dialog-title"
             class="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100"
         >
             {{ isEditing ? 'Edit task' : 'New task' }}
@@ -35,7 +42,6 @@
                 >
                 <input
                     id="title"
-                    #titleInput
                     formControlName="title"
                     class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                 />

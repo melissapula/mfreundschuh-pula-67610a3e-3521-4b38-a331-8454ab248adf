@@ -1,6 +1,12 @@
 import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { AuditAction, AuthUser, Role, TaskCategory } from '@app/data';
+import {
+    AuditAction,
+    AuthUser,
+    Role,
+    TaskCategory,
+    TaskStatus,
+} from '@app/data';
 import { TasksService } from './tasks.service';
 import { TaskEntity } from '../entities';
 import { AuditService } from '../audit/audit.service';
@@ -44,7 +50,18 @@ describe('TasksService', () => {
     });
 
     describe('create', () => {
+        function mockMaxOrder(max: number | null): void {
+            orgScope.accessibleOrgIds.mockResolvedValue(['acme']);
+            tasksRepo.createQueryBuilder.mockReturnValue({
+                select: jest.fn().mockReturnThis(),
+                where: jest.fn().mockReturnThis(),
+                andWhere: jest.fn().mockReturnThis(),
+                getRawOne: jest.fn().mockResolvedValue({ max }),
+            });
+        }
+
         it('sets ownerId and organizationId from the actor, never from the client-supplied DTO', async () => {
+            mockMaxOrder(null);
             const dto = { title: 'New task', category: TaskCategory.WORK };
 
             const result = await service.create(admin, dto);
@@ -59,6 +76,8 @@ describe('TasksService', () => {
         });
 
         it('logs a TASK_CREATE audit entry', async () => {
+            mockMaxOrder(null);
+
             await service.create(admin, {
                 title: 'New task',
                 category: TaskCategory.WORK,
@@ -70,6 +89,46 @@ describe('TasksService', () => {
                     actorUserId: 'admin-1',
                 }),
             );
+        });
+
+        it('appends to the bottom of the column when no order is given', async () => {
+            mockMaxOrder(4);
+
+            await service.create(admin, {
+                title: 'New task',
+                category: TaskCategory.WORK,
+                status: TaskStatus.TODO,
+            });
+
+            expect(tasksRepo.create).toHaveBeenCalledWith(
+                expect.objectContaining({ order: 5 }),
+            );
+        });
+
+        it('starts at order 0 for the first task in an empty column', async () => {
+            mockMaxOrder(null);
+
+            await service.create(admin, {
+                title: 'New task',
+                category: TaskCategory.WORK,
+            });
+
+            expect(tasksRepo.create).toHaveBeenCalledWith(
+                expect.objectContaining({ order: 0 }),
+            );
+        });
+
+        it('respects an explicit order from the DTO instead of computing one', async () => {
+            await service.create(admin, {
+                title: 'New task',
+                category: TaskCategory.WORK,
+                order: 7,
+            });
+
+            expect(tasksRepo.create).toHaveBeenCalledWith(
+                expect.objectContaining({ order: 7 }),
+            );
+            expect(orgScope.accessibleOrgIds).not.toHaveBeenCalled();
         });
     });
 

@@ -5,8 +5,8 @@ import { AuditAction } from '@app/data';
 import { AuditLogEntity } from '../entities';
 
 export interface AuditLogInput {
-    /** Empty string when the actor could not be identified (e.g. login with an unrecognized email). */
-    actorUserId: string;
+    /** Null when the actor could not be identified (e.g. login with an unrecognized email). */
+    actorUserId: string | null;
     actorEmail: string;
     action: AuditAction;
     resourceType: string;

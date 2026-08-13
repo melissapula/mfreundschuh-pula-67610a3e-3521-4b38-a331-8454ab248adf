@@ -1,8 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Task, TaskCategory, TaskStatus } from '@app/data/browser';
 import { TasksStore } from './tasks.store';
 import { TasksApiService } from '../api/tasks-api.service';
+
+function createTasksStore(api: Partial<TasksApiService>): TasksStore {
+    TestBed.configureTestingModule({
+        providers: [{ provide: TasksApiService, useValue: api }],
+    });
+    return TestBed.inject(TasksStore);
+}
 
 function makeTask(overrides: Partial<Task>): Task {
     return {
@@ -63,10 +70,7 @@ describe('TasksStore', () => {
             update: jest.fn(),
             remove: jest.fn(),
         };
-        TestBed.configureTestingModule({
-            providers: [{ provide: TasksApiService, useValue: api }],
-        });
-        store = TestBed.inject(TasksStore);
+        store = createTasksStore(api as unknown as TasksApiService);
         await store.load();
     });
 
@@ -149,6 +153,60 @@ describe('TasksStore', () => {
                 order: 0,
                 status: TaskStatus.DONE,
             });
+        });
+
+        it('reverts the optimistic move and surfaces an error when the API call fails', async () => {
+            api.update.mockReturnValue(throwError(() => new Error('boom')));
+
+            await store.reorderColumn(TaskStatus.TODO, ['t1']);
+
+            expect(store.tasks().find((t) => t.id === 't1')?.order).toBe(1);
+            expect(store.mutationError()).toBe('Could not save the new order.');
+        });
+    });
+
+    describe('mutation error handling', () => {
+        it('create() surfaces an error and rethrows without adding a task', async () => {
+            api.create.mockReturnValue(throwError(() => new Error('boom')));
+
+            await expect(
+                store.create({ title: 'x', category: TaskCategory.WORK }),
+            ).rejects.toThrow();
+
+            expect(store.tasks()).toHaveLength(3);
+            expect(store.mutationError()).toBe('Could not create the task.');
+        });
+
+        it('update() surfaces an error and rethrows without changing state', async () => {
+            api.update.mockReturnValue(throwError(() => new Error('boom')));
+
+            await expect(
+                store.update('t1', { title: 'renamed' }),
+            ).rejects.toThrow();
+
+            expect(store.tasks().find((t) => t.id === 't1')?.title).toBe(
+                'Zebra task',
+            );
+            expect(store.mutationError()).toBe('Could not save the task.');
+        });
+
+        it('remove() surfaces an error and rethrows without removing the task', async () => {
+            api.remove.mockReturnValue(throwError(() => new Error('boom')));
+
+            await expect(store.remove('t1')).rejects.toThrow();
+
+            expect(store.tasks()).toHaveLength(3);
+            expect(store.mutationError()).toBe('Could not delete the task.');
+        });
+
+        it('clearMutationError() resets the error state', async () => {
+            api.remove.mockReturnValue(throwError(() => new Error('boom')));
+            await expect(store.remove('t1')).rejects.toThrow();
+            expect(store.mutationError()).not.toBeNull();
+
+            store.clearMutationError();
+
+            expect(store.mutationError()).toBeNull();
         });
     });
 });

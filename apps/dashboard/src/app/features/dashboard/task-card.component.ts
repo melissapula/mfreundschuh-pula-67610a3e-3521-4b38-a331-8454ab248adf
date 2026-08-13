@@ -1,4 +1,11 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import {
+    Component,
+    EventEmitter,
+    Input,
+    OnDestroy,
+    Output,
+    signal,
+} from '@angular/core';
 import { NgClass } from '@angular/common';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { Task } from '@app/data/browser';
@@ -9,7 +16,7 @@ import { Task } from '@app/data/browser';
     imports: [DragDropModule, NgClass],
     templateUrl: './task-card.component.html',
 })
-export class TaskCardComponent {
+export class TaskCardComponent implements OnDestroy {
     @Input({ required: true }) task!: Task;
     @Input() canMutate = false;
     @Output() edit = new EventEmitter<Task>();
@@ -43,5 +50,9 @@ export class TaskCardComponent {
         clearTimeout(this.revertTimer);
         this.confirmingDelete.set(false);
         this.remove.emit(this.task);
+    }
+
+    ngOnDestroy(): void {
+        clearTimeout(this.revertTimer);
     }
 }

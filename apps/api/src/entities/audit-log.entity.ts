@@ -2,6 +2,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     PrimaryGeneratedColumn,
 } from 'typeorm';
 import { AuditAction } from '@app/data';
@@ -11,8 +12,9 @@ export class AuditLogEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
-    @Column({ type: 'uuid' })
-    actorUserId!: string;
+    /** Null when the actor could not be identified (e.g. login with an unrecognized email). */
+    @Column({ type: 'uuid', nullable: true })
+    actorUserId!: string | null;
 
     @Column()
     actorEmail!: string;
@@ -26,6 +28,7 @@ export class AuditLogEntity {
     @Column({ type: 'uuid', nullable: true })
     resourceId!: string | null;
 
+    @Index()
     @Column({ type: 'uuid', nullable: true })
     organizationId!: string | null;
 

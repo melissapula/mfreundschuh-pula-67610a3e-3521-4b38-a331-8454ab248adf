@@ -54,6 +54,21 @@
             <app-completion-chart [stats]="store.completionStats()" />
         </div>
 
+        @if (store.mutationError(); as mutationError) {
+            <div
+                class="mb-4 flex items-center justify-between gap-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+            >
+                <span>{{ mutationError }}</span>
+                <button
+                    type="button"
+                    (click)="store.clearMutationError()"
+                    class="text-red-700 hover:underline dark:text-red-300"
+                >
+                    Dismiss
+                </button>
+            </div>
+        }
+
         <div class="mb-4 flex flex-wrap items-center gap-3">
             <input
                 #searchInput

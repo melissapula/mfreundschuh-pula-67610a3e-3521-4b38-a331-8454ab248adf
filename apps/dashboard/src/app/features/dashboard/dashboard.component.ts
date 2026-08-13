@@ -92,17 +92,26 @@ export class DashboardComponent implements OnInit {
 
     async saveTask(dto: CreateTaskInput | UpdateTaskInput): Promise<void> {
         const editing = this.editingTask();
-        if (editing) {
-            await this.store.update(editing.id, dto as UpdateTaskInput);
-        } else {
-            await this.store.create(dto as CreateTaskInput);
+        try {
+            if (editing) {
+                await this.store.update(editing.id, dto as UpdateTaskInput);
+            } else {
+                await this.store.create(dto as CreateTaskInput);
+            }
+            this.showForm.set(false);
+        } catch {
+            // Leave the dialog open so the user's input isn't lost; the
+            // failure itself is surfaced via store.mutationError().
         }
-        this.showForm.set(false);
     }
 
     async deleteTask(task: Task): Promise<void> {
         // TaskCardComponent already gates this behind its own two-click confirm.
-        await this.store.remove(task.id);
+        try {
+            await this.store.remove(task.id);
+        } catch {
+            // Surfaced via store.mutationError().
+        }
     }
 
     onDrop(event: CdkDragDrop<Task[]>, targetStatus: TaskStatus): void {

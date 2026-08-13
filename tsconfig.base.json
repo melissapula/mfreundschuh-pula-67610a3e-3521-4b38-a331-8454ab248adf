@@ -13,7 +13,7 @@
         "lib": ["es2020", "dom"],
         "skipLibCheck": true,
         "skipDefaultLibCheck": true,
-        "strict": false,
+        "strict": true,
         "paths": {
             "@app/data": ["./libs/data/src/index.ts"],
             "@app/data/browser": ["./libs/data/src/browser.ts"],

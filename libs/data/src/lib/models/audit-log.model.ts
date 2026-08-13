@@ -2,7 +2,7 @@ import { AuditAction } from '../enums/audit-action.enum';
 
 export interface AuditLog {
     id: string;
-    actorUserId: string;
+    actorUserId: string | null;
     actorEmail: string;
     action: AuditAction;
     resourceType: string;

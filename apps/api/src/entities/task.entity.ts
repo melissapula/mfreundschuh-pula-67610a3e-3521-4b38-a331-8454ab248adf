@@ -2,6 +2,7 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    Index,
     JoinColumn,
     ManyToOne,
     PrimaryGeneratedColumn,
@@ -40,6 +41,7 @@ export class TaskEntity {
     owner?: UserEntity;
 
     /** Set from the owner's org at creation time; immutable afterward — this is what org-scope checks filter on. */
+    @Index()
     @Column({ type: 'uuid' })
     organizationId!: string;
 

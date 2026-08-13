@@ -22,12 +22,15 @@ export class TasksService {
     ) {}
 
     async create(user: AuthUser, dto: CreateTaskDto): Promise<TaskEntity> {
+        const status = dto.status ?? TaskStatus.TODO;
+        const order = dto.order ?? (await this.nextOrder(user, status));
+
         const task = this.tasks.create({
             title: dto.title,
             description: dto.description ?? '',
             category: dto.category,
-            status: dto.status ?? TaskStatus.TODO,
-            order: dto.order ?? 0,
+            status,
+            order,
             ownerId: user.sub,
             // Set from the actor's own org, never client-supplied — this is what
             // makes org scoping trustworthy (a task can't be created "into"
@@ -105,6 +108,30 @@ export class TasksService {
             resourceId: id,
             organizationId: task.organizationId,
         });
+    }
+
+    /**
+     * Appends to the bottom of a status column: one past the highest `order`
+     * among the tasks the actor can currently see in that column. Scoped the
+     * same way `reorderColumn` treats "the column" on the frontend — by org
+     * scope + status, not just status alone — so a fresh task lands after
+     * everything already there instead of colliding at 0.
+     */
+    private async nextOrder(
+        user: AuthUser,
+        status: TaskStatus,
+    ): Promise<number> {
+        const orgIds = await this.orgScope.accessibleOrgIds(user);
+        if (!orgIds.length) return 0;
+
+        const row = await this.tasks
+            .createQueryBuilder('task')
+            .select('MAX(task.order)', 'max')
+            .where('task.organizationId IN (:...orgIds)', { orgIds })
+            .andWhere('task.status = :status', { status })
+            .getRawOne<{ max: number | null }>();
+
+        return (row?.max ?? -1) + 1;
     }
 
     /**

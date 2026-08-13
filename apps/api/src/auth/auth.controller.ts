@@ -33,7 +33,7 @@ export class AuthController {
 
         if (!user) {
             await this.audit.log({
-                actorUserId: '',
+                actorUserId: null,
                 actorEmail: dto.email,
                 action: AuditAction.LOGIN_FAILED,
                 resourceType: 'auth',

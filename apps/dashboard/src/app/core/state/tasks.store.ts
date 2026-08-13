@@ -25,6 +25,13 @@ export class TasksStore {
     private readonly _tasks = signal<Task[]>([]);
     private readonly _loading = signal(false);
     private readonly _error = signal<string | null>(null);
+    /**
+     * Separate from `_error`: `_error` gates the whole board (load failed,
+     * nothing to show). A failed create/update/remove/reorder shouldn't hide
+     * tasks that already loaded fine — it surfaces as a dismissible banner
+     * instead.
+     */
+    private readonly _mutationError = signal<string | null>(null);
     private readonly _categoryFilter = signal<CategoryFilter>('ALL');
     private readonly _statusFilter = signal<StatusFilter>('ALL');
     private readonly _sortBy = signal<SortBy>('order');
@@ -33,6 +40,7 @@ export class TasksStore {
     readonly tasks = this._tasks.asReadonly();
     readonly loading = this._loading.asReadonly();
     readonly error = this._error.asReadonly();
+    readonly mutationError = this._mutationError.asReadonly();
     readonly categoryFilter = this._categoryFilter.asReadonly();
     readonly statusFilter = this._statusFilter.asReadonly();
     readonly sortBy = this._sortBy.asReadonly();
@@ -114,21 +122,40 @@ export class TasksStore {
         }
     }
 
+    clearMutationError(): void {
+        this._mutationError.set(null);
+    }
+
     async create(dto: CreateTaskInput): Promise<void> {
-        const task = await firstValueFrom(this.api.create(dto));
-        this._tasks.update((tasks) => [...tasks, task]);
+        try {
+            const task = await firstValueFrom(this.api.create(dto));
+            this._tasks.update((tasks) => [...tasks, task]);
+        } catch (err) {
+            this._mutationError.set('Could not create the task.');
+            throw err;
+        }
     }
 
     async update(id: string, dto: UpdateTaskInput): Promise<void> {
-        const updated = await firstValueFrom(this.api.update(id, dto));
-        this._tasks.update((tasks) =>
-            tasks.map((t) => (t.id === id ? updated : t)),
-        );
+        try {
+            const updated = await firstValueFrom(this.api.update(id, dto));
+            this._tasks.update((tasks) =>
+                tasks.map((t) => (t.id === id ? updated : t)),
+            );
+        } catch (err) {
+            this._mutationError.set('Could not save the task.');
+            throw err;
+        }
     }
 
     async remove(id: string): Promise<void> {
-        await firstValueFrom(this.api.remove(id));
-        this._tasks.update((tasks) => tasks.filter((t) => t.id !== id));
+        try {
+            await firstValueFrom(this.api.remove(id));
+            this._tasks.update((tasks) => tasks.filter((t) => t.id !== id));
+        } catch (err) {
+            this._mutationError.set('Could not delete the task.');
+            throw err;
+        }
     }
 
     /**
@@ -142,15 +169,16 @@ export class TasksStore {
         status: TaskStatus,
         orderedTaskIds: string[],
     ): Promise<void> {
-        const current = this._tasks();
+        const before = this._tasks();
         const changed: Array<{ id: string; dto: UpdateTaskInput }> = [];
 
         orderedTaskIds.forEach((id, index) => {
-            const task = current.find((t) => t.id === id);
+            const task = before.find((t) => t.id === id);
             if (task && (task.order !== index || task.status !== status)) {
                 changed.push({ id, dto: { order: index, status } });
             }
         });
+        if (!changed.length) return;
 
         // Optimistic local update so the drag feels instant; API calls follow.
         this._tasks.update((tasks) =>
@@ -160,10 +188,16 @@ export class TasksStore {
             }),
         );
 
-        await Promise.all(
-            changed.map(({ id, dto }) =>
-                firstValueFrom(this.api.update(id, dto)),
-            ),
-        );
+        try {
+            await Promise.all(
+                changed.map(({ id, dto }) =>
+                    firstValueFrom(this.api.update(id, dto)),
+                ),
+            );
+        } catch {
+            // Revert the optimistic move — the drop didn't actually persist.
+            this._tasks.set(before);
+            this._mutationError.set('Could not save the new order.');
+        }
     }
 }
