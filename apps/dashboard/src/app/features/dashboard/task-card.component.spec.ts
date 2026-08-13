@@ -68,16 +68,20 @@ describe('TaskCardComponent', () => {
         fixture.componentInstance.onDeleteClick();
         // CDK (drag-drop) schedules its own internal timers around the
         // component lifecycle, so onDeleteClick's setTimeout isn't reliably
-        // at index 0 — but nothing else can run between the call above
-        // returning and reading `mock.results` here, so the *last*
-        // recorded call is unambiguously its own.
-        const results = setTimeoutSpy.mock.results;
-        const timerId = results[results.length - 1].value;
+        // at a fixed index — select it by its known 3000ms delay instead,
+        // which is unambiguous regardless of ordering.
+        const callIndex = setTimeoutSpy.mock.calls.findIndex(
+            (call) => call[1] === 3000,
+        );
+        expect(callIndex).toBeGreaterThanOrEqual(0);
+        const timerId = setTimeoutSpy.mock.results[callIndex].value;
 
         fixture.destroy();
 
         expect(clearTimeoutSpy).toHaveBeenCalledWith(timerId);
 
+        setTimeoutSpy.mockRestore();
+        clearTimeoutSpy.mockRestore();
         jest.useRealTimers();
     });
 });

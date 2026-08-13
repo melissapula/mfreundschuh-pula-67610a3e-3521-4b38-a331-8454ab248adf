@@ -193,6 +193,51 @@ describe('TasksStore', () => {
 
             expect(store.mutationError()).toBe('Could not save the new order.');
         });
+
+        it('within a single call, reverts only the tasks whose own PATCH failed — not tasks whose PATCH in the same Promise.allSettled batch already succeeded', async () => {
+            // All three tasks move into TODO in one call. t2's PATCH fails;
+            // t1's and t3's succeed.
+            api.update.mockImplementation((id: string, dto: unknown) => {
+                if (id === 't2') return throwError(() => new Error('boom'));
+                return of({
+                    ...tasks.find((t) => t.id === id),
+                    ...(dto as object),
+                });
+            });
+
+            await store.reorderColumn(TaskStatus.TODO, ['t1', 't2', 't3']);
+
+            const t1 = store.tasks().find((t) => t.id === 't1');
+            expect(t1?.status).toBe(TaskStatus.TODO);
+            expect(t1?.order).toBe(0);
+
+            const t3 = store.tasks().find((t) => t.id === 't3');
+            expect(t3?.status).toBe(TaskStatus.TODO);
+            expect(t3?.order).toBe(2);
+
+            // t2 is the only one that reverts, back to its pre-drag values.
+            const t2 = store.tasks().find((t) => t.id === 't2');
+            expect(t2?.status).toBe(TaskStatus.DONE);
+            expect(t2?.order).toBe(0);
+
+            expect(store.mutationError()).toBe('Could not save the new order.');
+        });
+
+        it('clears a stale mutation error even on a no-op drop (dropped back in the same place)', async () => {
+            api.update.mockImplementation((id: string, dto: unknown) =>
+                of({ ...tasks.find((t) => t.id === id), ...(dto as object) }),
+            );
+            await store.reorderColumn(TaskStatus.TODO, ['t1']); // t1 -> order 0, TODO
+
+            api.remove.mockReturnValue(throwError(() => new Error('boom')));
+            await expect(store.remove('t2')).rejects.toThrow(); // seeds a stale error
+            expect(store.mutationError()).not.toBeNull();
+
+            // Same order/status t1 already has — produces no `changed` entries.
+            await store.reorderColumn(TaskStatus.TODO, ['t1']);
+
+            expect(store.mutationError()).toBeNull();
+        });
     });
 
     describe('mutation error handling', () => {

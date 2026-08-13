@@ -170,12 +170,14 @@ export class TasksStore {
      * with one code path.
      *
      * A cross-column drag calls this twice (once per column) without
-     * awaiting either — so on failure we revert only the specific tasks
-     * *this* call touched, back to their own pre-drag values, rather than
-     * restoring a whole-array snapshot. A snapshot taken at the start of
-     * one call can already include the other call's optimistic update (or
-     * miss its later success), so restoring it wholesale would stomp on a
-     * sibling call's change that actually persisted fine.
+     * awaiting either, and within a single call every changed task PATCHes
+     * independently — so on failure we revert only the specific tasks that
+     * actually failed, back to their own pre-drag values, never a whole-
+     * array or whole-call snapshot. Either of those would stomp on a
+     * change that genuinely persisted: a sibling call's success (cross-
+     * column case), or a sibling PATCH within this same call that resolved
+     * fine while another one in the same `Promise.allSettled` rejected
+     * (intra-call case).
      */
     async reorderColumn(
         status: TaskStatus,
@@ -198,9 +200,8 @@ export class TasksStore {
                 });
             }
         });
-        if (!changed.length) return;
-
         this._mutationError.set(null);
+        if (!changed.length) return;
 
         // Optimistic local update so the drag feels instant; API calls follow.
         this._tasks.update((tasks) =>
@@ -210,19 +211,19 @@ export class TasksStore {
             }),
         );
 
-        try {
-            await Promise.all(
-                changed.map(({ id, dto }) =>
-                    firstValueFrom(this.api.update(id, dto)),
-                ),
-            );
-        } catch {
-            // Revert only the tasks this call touched, back to their own
-            // pre-drag values — see the doc comment above for why not a
-            // full snapshot restore.
+        const results = await Promise.allSettled(
+            changed.map(({ id, dto }) =>
+                firstValueFrom(this.api.update(id, dto)),
+            ),
+        );
+
+        const failed = changed.filter(
+            (_, i) => results[i].status === 'rejected',
+        );
+        if (failed.length) {
             this._tasks.update((tasks) =>
                 tasks.map((t) => {
-                    const change = changed.find((c) => c.id === t.id);
+                    const change = failed.find((c) => c.id === t.id);
                     return change ? { ...t, ...change.previous } : t;
                 }),
             );

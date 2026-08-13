@@ -139,5 +139,36 @@ describe('DashboardComponent', () => {
 
             expect(component.formError()).toBeNull();
         });
+
+        it("also clears the board-level banner on close when this dialog's own save is what set it", async () => {
+            const fixture = createDashboard();
+            const component = fixture.componentInstance;
+            api.create.mockReturnValue(throwError(() => new Error('boom')));
+            component.openCreate();
+            await component.saveTask({
+                title: 'x',
+                category: TaskCategory.WORK,
+            });
+            expect(component.store.mutationError()).not.toBeNull();
+
+            component.closeForm();
+
+            expect(component.store.mutationError()).toBeNull();
+        });
+
+        it("leaves an unrelated board-level banner alone on close — a dialog that never failed shouldn't dismiss someone else's error", async () => {
+            const fixture = createDashboard();
+            const component = fixture.componentInstance;
+            // An unrelated failure (e.g. a failed drag) sets the board-level
+            // banner before the dialog is ever opened.
+            api.remove.mockReturnValue(throwError(() => new Error('boom')));
+            await expect(component.store.remove('t1')).rejects.toThrow();
+            expect(component.store.mutationError()).not.toBeNull();
+
+            component.openCreate();
+            component.closeForm();
+
+            expect(component.store.mutationError()).not.toBeNull();
+        });
     });
 });

@@ -105,20 +105,40 @@
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2">
-                <button
-                    type="button"
-                    (click)="closed.emit()"
-                    class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-                >
-                    Cancel
-                </button>
-                <button
-                    type="submit"
-                    class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                >
-                    {{ isEditing ? 'Save changes' : 'Create task' }}
-                </button>
+            <div class="flex items-center justify-between gap-2">
+                <!--
+                    The real feedback channel for a blocked Escape/backdrop
+                    dismiss: unlike the shake below, this doesn't depend on
+                    prefers-reduced-motion or on sight at all, and — because
+                    it tracks form.dirty directly rather than a one-shot
+                    flash — it's already visible before a dismiss is even
+                    attempted, and a second blocked attempt isn't a silent
+                    no-op just because the first one is still animating.
+                -->
+                <span aria-live="polite">
+                    @if (form.dirty) {
+                        <span
+                            class="text-xs text-amber-600 dark:text-amber-400"
+                        >
+                            Unsaved changes
+                        </span>
+                    }
+                </span>
+                <div class="flex gap-2">
+                    <button
+                        type="button"
+                        (click)="closed.emit()"
+                        class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                    >
+                        {{ isEditing ? 'Save changes' : 'Create task' }}
+                    </button>
+                </div>
             </div>
         </form>
     </div>

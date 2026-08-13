@@ -99,6 +99,14 @@ export class DashboardComponent implements OnInit {
 
     closeForm(): void {
         this.showForm.set(false);
+        // Only clear the board-level banner if this dialog session is the
+        // one that set it (a failed save from earlier in this session) —
+        // otherwise closing an unrelated dialog would silently dismiss an
+        // unrelated error still worth the user's attention (e.g. a failed
+        // drag from before the dialog was even opened).
+        if (this.formError()) {
+            this.store.clearMutationError();
+        }
         this.formError.set(null);
     }
 
@@ -116,7 +124,12 @@ export class DashboardComponent implements OnInit {
             // Leave the dialog open so the user's input isn't lost, and
             // surface why right inside it — store.mutationError() alone
             // renders behind the modal backdrop, invisible while it's open.
-            this.formError.set(this.store.mutationError());
+            // The fallback covers the (currently unreachable, but not
+            // worth coupling on) case where something else raced in and
+            // cleared the store's error before this read.
+            this.formError.set(
+                this.store.mutationError() ?? 'Could not save the task.',
+            );
         }
     }
 
