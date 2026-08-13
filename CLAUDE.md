@@ -20,5 +20,83 @@
 - DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
-
 <!-- nx configuration end-->
+
+# TurboVets Assessment — Project Context
+
+Secure Task Management System for the TurboVets full-stack coding challenge.
+NX monorepo: NestJS api (`apps/api`), Angular dashboard (`apps/dashboard`),
+two shared libs (`libs/data`, `libs/auth`). Full details, architecture
+rationale, and access-control design are in `README.md` — read that first for
+anything about how the app works. This section is session-to-session status
+and open threads only.
+
+## Live deployment
+
+- Dashboard (Cloudflare Pages): https://turbovets-task-dashboard-missa.pages.dev
+- API (Fly.io): https://turbovets-task-api-missa.fly.dev/api
+- GitHub: https://github.com/melissapula/mfreundschuh-pula-67610a3e-3521-4b38-a331-8454ab248adf
+- Demo logins: all four seeded accounts (`owner@acme.test`, `admin@acme.test`,
+  `admin.eng@acme.test`, `viewer@acme.test`) share password `Password123!` —
+  see README's "Trying the live demo" section for what each role demonstrates.
+- Fly.io is on the free trial tier: **hard 5-minute runtime cap per boot**,
+  account-level restriction, unrelated to app code. Auto-restarts on the next
+  request with a brief cold-start delay. Adding a card to the Fly account
+  removes this; that's Missa's call, not something to do unprompted.
+- Redeploy commands: `npx nx build api --configuration=production` then
+  `flyctl deploy --ha=false` from the workspace root (api); `npx nx build
+dashboard --configuration=production` then `npx wrangler pages deploy
+dist/apps/dashboard/browser --project-name=turbovets-task-dashboard-missa
+--branch=master --commit-dirty=true` (dashboard). `flyctl` isn't on PATH in
+  this environment — call it via `"$env:USERPROFILE\.fly\bin\flyctl.exe"` in
+  PowerShell, or open a fresh terminal.
+
+## Status as of 2026-08-13
+
+Core build, tests (60 total: 20 libs/auth + 21 api + 19 dashboard), and
+deployment are done and verified live. Two security-hardening passes are also
+done — see README's "Security hardening" and "Second pass" subsections under
+Access Control for the full list of what was fixed (timing attack, rate
+limiting, helmet, non-root Docker container, CORS tightening, slimmed Docker
+image).
+
+## Open follow-up: frontend CSP (not shipped)
+
+Adding a `Content-Security-Policy` header to the Cloudflare Pages `_headers`
+file reliably broke Tailwind's styling (DOM/text rendered fine, zero styles
+applied), across many bisection attempts, without a conclusive root cause.
+Notes for picking this back up:
+
+- A lone `Content-Security-Policy: style-src 'self' 'unsafe-inline'` worked
+  fine on its own.
+- Adding almost any other directive — `default-src 'self'`, `script-src
+'self'`, even directives that shouldn't interact with style application at
+  all — broke it, which doesn't match documented CSP directive semantics
+  (more-specific directives like `style-src` are supposed to fully override
+  `default-src` for their category, independent of other directives).
+- Complication: the production Cloudflare Pages domain
+  (`turbovets-task-dashboard-missa.pages.dev`) intermittently served
+  **stale cached content** across test iterations — several "broken" results
+  turned out to be old cached responses, not the actual current deployment.
+  Always verify against the deployment's own unique preview URL (the
+  `https://<hash>.turbovets-task-dashboard-missa.pages.dev` link `wrangler
+pages deploy` prints) first, and only trust the production domain's
+  behavior after confirming the preview URL is correct — ideally with a
+  hard cache bypass (unique query param + `Cache-Control: no-cache`, and
+  check via `curl`, not just the browser, since the browser has its own
+  cache layer too).
+- Currently shipped: 5 headers with no CSP (`X-Frame-Options`,
+  `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`,
+  `Strict-Transport-Security`), all verified live. File:
+  `apps/dashboard/public/_headers`.
+- The api's own CSP (via `helmet()` in `apps/api/src/main.ts`) is unrelated
+  and unaffected — that one works fine, this is a Tailwind/Cloudflare-Pages/
+  browser-specific frontend issue.
+- Worth trying next: test locally against a plain static file server (no
+  Cloudflare Pages in the loop) with the same CSP to isolate whether
+  Cloudflare's header delivery is part of the problem; or try Chrome
+  DevTools' own Network/Security panel directly (not through browser
+  automation) to see the CSP violation reports Chrome should be logging,
+  which the automation's console-reading tool never captured despite
+  multiple attempts — worth confirming whether that's a tool limitation or a
+  genuine absence of violations (which would itself be a clue).

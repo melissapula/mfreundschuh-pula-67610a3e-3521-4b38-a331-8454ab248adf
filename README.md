@@ -4,14 +4,56 @@ A role-based, organization-scoped task manager built for the TurboVets full-stac
 coding challenge. NX monorepo: NestJS API + TypeORM/SQLite, Angular dashboard,
 two shared libraries.
 
-**Live demo:** https://turbovets-task-dashboard-missa.pages.dev (api:
-https://turbovets-task-api-missa.fly.dev/api) — demo accounts below
+**Live demo:** https://turbovets-task-dashboard-missa.pages.dev
 **Video walkthrough:** _TODO — link here before submitting_
+
+---
+
+## Trying the live demo
+
+No setup needed — just open the dashboard and log in:
+
+**https://turbovets-task-dashboard-missa.pages.dev**
+
+### Login credentials
+
+All four accounts share the password `Password123!`. Each demonstrates a
+different part of the access-control model — logging into more than one is
+the fastest way to see the RBAC/org-scoping actually working, not just
+described:
+
+| Email                 | Role   | Organization            | What it shows                                                                                                                                          |
+| --------------------- | ------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `owner@acme.test`     | OWNER  | Acme Corp (root)        | Sees/manages tasks across the **entire org tree** — Acme Corp and Engineering                                                                          |
+| `admin@acme.test`     | ADMIN  | Acme Corp (root)        | Sees/manages root + Engineering (an Admin's scope reaches into sub-orgs below them)                                                                    |
+| `admin.eng@acme.test` | ADMIN  | Acme Corp / Engineering | Scoped to Engineering **only** — log in right after `admin@acme.test` to see an Admin seated at a sub-org has no visibility upward into the parent org |
+| `viewer@acme.test`    | VIEWER | Acme Corp / Engineering | Read-only — no create/edit/delete controls anywhere, no "Audit Log" link in the header                                                                 |
+
+### A quick tour, if useful
+
+- Create, edit, drag-and-drop reorder, or delete a task (as any role except Viewer)
+- Log in as `viewer@acme.test` and confirm there's genuinely nothing to click to mutate a task
+- Open **Audit Log** (top right, Owner/Admin only) — every action taken above shows up there, scoped to what that role can see
+- Toggle dark/light mode (top right) and try the keyboard shortcuts: `n` for a new task, `/` to focus the search box
+- Try hitting `https://turbovets-task-api-missa.fly.dev/api/tasks` directly without a token — confirms the API rejects unauthenticated requests, not just the UI hiding buttons
+
+### Two things worth knowing before you start
+
+- **First request may be slow.** The API runs on Fly.io's free trial tier,
+  which caps continuous uptime at 5 minutes per boot (a Fly account
+  restriction, unrelated to the app itself). If it's been idle, the first
+  login or task load after that can take a few extra seconds while it
+  restarts — not a bug, no refresh needed, it resolves on its own.
+- **It's a real shared instance.** Since it's genuinely live (not a mockup),
+  data can be changed by anyone testing it, including you. If it looks messy
+  by the time you look at it, that's expected — the seed data can be reset
+  any time (see [Deployment](#deployment)).
 
 ---
 
 ## Table of contents
 
+- [Trying the live demo](#trying-the-live-demo)
 - [Setup instructions](#setup-instructions)
 - [Architecture overview](#architecture-overview)
 - [Data model](#data-model)
