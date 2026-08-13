@@ -141,7 +141,7 @@
                             [cdkDropListData]="store.byStatus()[column.status]"
                             [cdkDropListConnectedTo]="columnIds"
                             (cdkDropListDropped)="onDrop($event, column.status)"
-                            class="flex min-h-[100px] flex-1 flex-col gap-2"
+                            class="flex min-h-25 flex-1 flex-col gap-2"
                         >
                             @for (
                                 task of store.byStatus()[column.status];
