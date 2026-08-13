@@ -34,6 +34,17 @@ describe('AuthService', () => {
         expect(auth.user()).toBeNull();
     });
 
+    it('starts unauthenticated when localStorage holds corrupted (non-JSON) session data', () => {
+        localStorage.setItem('tv-auth', 'not valid json{{{');
+        const http = { post: jest.fn() } as unknown as HttpClient;
+        const auth = createAuthService(http);
+
+        expect(auth.isAuthenticated()).toBe(false);
+        expect(auth.user()).toBeNull();
+        expect(auth.accessToken()).toBeNull();
+        expect(auth.role()).toBeNull();
+    });
+
     it('restores a saved session from localStorage on construction', () => {
         localStorage.setItem('tv-auth', JSON.stringify(loginResponse));
         const http = { post: jest.fn() } as unknown as HttpClient;

@@ -31,6 +31,44 @@ describe('AuditService', () => {
             );
             expect(save).toHaveBeenCalled();
         });
+
+        it('persists explicit metadata as-is, and logs "(unknown)"/"-" fallbacks for a falsy actor/resource/org (e.g. a login attempt against an unrecognized email)', async () => {
+            const create = jest.fn((x) => x);
+            const save = jest.fn().mockResolvedValue(undefined);
+            const repo = {
+                create,
+                save,
+            } as unknown as Repository<AuditLogEntity>;
+            const service = new AuditService(repo);
+            const loggerSpy = jest
+                .spyOn(service['logger'], 'log')
+                .mockImplementation();
+
+            await service.log({
+                actorUserId: null,
+                actorEmail: '',
+                action: AuditAction.LOGIN_FAILED,
+                resourceType: 'auth',
+                resourceId: null,
+                organizationId: null,
+                metadata: { attempted: 'nobody@acme.test' },
+            });
+
+            expect(create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    metadata: { attempted: 'nobody@acme.test' },
+                }),
+            );
+            expect(loggerSpy).toHaveBeenCalledWith(
+                expect.stringContaining('actor=(unknown)'),
+            );
+            expect(loggerSpy).toHaveBeenCalledWith(
+                expect.stringContaining('resource=auth:-'),
+            );
+            expect(loggerSpy).toHaveBeenCalledWith(
+                expect.stringContaining('org=-'),
+            );
+        });
     });
 
     describe('findByOrgIds', () => {
