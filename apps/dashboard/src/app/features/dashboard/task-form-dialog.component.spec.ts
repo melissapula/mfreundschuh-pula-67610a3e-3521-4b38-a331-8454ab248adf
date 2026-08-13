@@ -210,6 +210,23 @@ describe('TaskFormDialogComponent', () => {
                 'Could not save the task.',
             );
         });
+
+        it("does not reset the form when only `error` changes — ngOnChanges fires for every @Input, not just `task`, so this is what actually protects the user's input on a failed save", () => {
+            const fixture = createDialog();
+            fixture.componentInstance.form.controls.title.setValue(
+                'In-progress draft',
+            );
+
+            fixture.componentRef.setInput(
+                'error',
+                'Could not create the task.',
+            );
+            fixture.detectChanges();
+
+            expect(fixture.componentInstance.form.value.title).toBe(
+                'In-progress draft',
+            );
+        });
     });
 
     describe('accessibility', () => {

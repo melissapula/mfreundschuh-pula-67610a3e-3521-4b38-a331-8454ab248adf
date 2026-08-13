@@ -6,6 +6,7 @@ import {
     OnChanges,
     OnDestroy,
     Output,
+    SimpleChanges,
     inject,
     signal,
 } from '@angular/core';
@@ -51,7 +52,12 @@ export class TaskFormDialogComponent implements OnChanges, OnDestroy {
         status: [TaskStatus.TODO, Validators.required],
     });
 
-    ngOnChanges(): void {
+    ngOnChanges(changes: SimpleChanges): void {
+        // ngOnChanges fires for ANY @Input change, not just `task` — without
+        // this guard, `error` turning on after a failed save (a different
+        // input, same lifecycle hook) would reset the form and wipe out
+        // exactly the input the failed-save fix exists to preserve.
+        if (!changes['task']) return;
         this.form.reset({
             title: this.task?.title ?? '',
             description: this.task?.description ?? '',
