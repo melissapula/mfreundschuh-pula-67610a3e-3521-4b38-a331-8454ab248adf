@@ -112,10 +112,18 @@ export class TasksService {
 
     /**
      * Appends to the bottom of a status column: one past the highest `order`
-     * among the tasks the actor can currently see in that column. Scoped the
-     * same way `reorderColumn` treats "the column" on the frontend — by org
-     * scope + status, not just status alone — so a fresh task lands after
-     * everything already there instead of colliding at 0.
+     * among the tasks in that status the actor can see, scoped by their
+     * accessible orgs — same as `findAllForUser` — not just their own org,
+     * so an Admin/Owner's "column" can span sub-orgs. Not a strict
+     * equivalent of the frontend's column concept, which additionally
+     * narrows by whatever category/search filter happens to be active; this
+     * only needs to avoid colliding with 0, not reproduce the exact visible
+     * ordering.
+     *
+     * Not transactional: two near-simultaneous creates in the same column
+     * can both read the same MAX and land on the same order. Harmless at
+     * this app's scale — worst case two cards tie and get resolved by
+     * insertion order until the next drag reindexes the column.
      */
     private async nextOrder(
         user: AuthUser,

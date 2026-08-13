@@ -164,6 +164,7 @@
     @if (showForm()) {
         <app-task-form-dialog
             [task]="editingTask()"
+            [error]="formError()"
             (save)="saveTask($event)"
             (closed)="closeForm()"
         />

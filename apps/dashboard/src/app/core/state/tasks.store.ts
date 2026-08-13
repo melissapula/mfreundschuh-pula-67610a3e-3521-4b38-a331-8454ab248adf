@@ -112,6 +112,7 @@ export class TasksStore {
     async load(): Promise<void> {
         this._loading.set(true);
         this._error.set(null);
+        this._mutationError.set(null);
         try {
             const tasks = await firstValueFrom(this.api.list());
             this._tasks.set(tasks);
@@ -127,6 +128,7 @@ export class TasksStore {
     }
 
     async create(dto: CreateTaskInput): Promise<void> {
+        this._mutationError.set(null);
         try {
             const task = await firstValueFrom(this.api.create(dto));
             this._tasks.update((tasks) => [...tasks, task]);
@@ -137,6 +139,7 @@ export class TasksStore {
     }
 
     async update(id: string, dto: UpdateTaskInput): Promise<void> {
+        this._mutationError.set(null);
         try {
             const updated = await firstValueFrom(this.api.update(id, dto));
             this._tasks.update((tasks) =>
@@ -149,6 +152,7 @@ export class TasksStore {
     }
 
     async remove(id: string): Promise<void> {
+        this._mutationError.set(null);
         try {
             await firstValueFrom(this.api.remove(id));
             this._tasks.update((tasks) => tasks.filter((t) => t.id !== id));
@@ -164,21 +168,39 @@ export class TasksStore {
      * and (for a cross-column drop) the new `status` for whichever tasks
      * actually changed — covers both reordering and status-change-by-drag
      * with one code path.
+     *
+     * A cross-column drag calls this twice (once per column) without
+     * awaiting either — so on failure we revert only the specific tasks
+     * *this* call touched, back to their own pre-drag values, rather than
+     * restoring a whole-array snapshot. A snapshot taken at the start of
+     * one call can already include the other call's optimistic update (or
+     * miss its later success), so restoring it wholesale would stomp on a
+     * sibling call's change that actually persisted fine.
      */
     async reorderColumn(
         status: TaskStatus,
         orderedTaskIds: string[],
     ): Promise<void> {
-        const before = this._tasks();
-        const changed: Array<{ id: string; dto: UpdateTaskInput }> = [];
+        const current = this._tasks();
+        const changed: Array<{
+            id: string;
+            dto: UpdateTaskInput;
+            previous: UpdateTaskInput;
+        }> = [];
 
         orderedTaskIds.forEach((id, index) => {
-            const task = before.find((t) => t.id === id);
+            const task = current.find((t) => t.id === id);
             if (task && (task.order !== index || task.status !== status)) {
-                changed.push({ id, dto: { order: index, status } });
+                changed.push({
+                    id,
+                    dto: { order: index, status },
+                    previous: { order: task.order, status: task.status },
+                });
             }
         });
         if (!changed.length) return;
+
+        this._mutationError.set(null);
 
         // Optimistic local update so the drag feels instant; API calls follow.
         this._tasks.update((tasks) =>
@@ -195,8 +217,15 @@ export class TasksStore {
                 ),
             );
         } catch {
-            // Revert the optimistic move — the drop didn't actually persist.
-            this._tasks.set(before);
+            // Revert only the tasks this call touched, back to their own
+            // pre-drag values — see the doc comment above for why not a
+            // full snapshot restore.
+            this._tasks.update((tasks) =>
+                tasks.map((t) => {
+                    const change = changed.find((c) => c.id === t.id);
+                    return change ? { ...t, ...change.previous } : t;
+                }),
+            );
             this._mutationError.set('Could not save the new order.');
         }
     }

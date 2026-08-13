@@ -19,6 +19,7 @@
     <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -->
     <div
         class="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-slate-800"
+        [class.shake]="blockedDismiss()"
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-dialog-title"
@@ -32,6 +33,14 @@
         >
             {{ isEditing ? 'Edit task' : 'New task' }}
         </h2>
+
+        @if (error) {
+            <p
+                class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+            >
+                {{ error }}
+            </p>
+        }
 
         <form [formGroup]="form" (ngSubmit)="submit()">
             <div class="mb-3">

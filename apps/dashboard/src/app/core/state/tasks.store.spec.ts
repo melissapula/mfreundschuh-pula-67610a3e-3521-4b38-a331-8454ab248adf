@@ -163,6 +163,36 @@ describe('TasksStore', () => {
             expect(store.tasks().find((t) => t.id === 't1')?.order).toBe(1);
             expect(store.mutationError()).toBe('Could not save the new order.');
         });
+
+        it("only reverts the failing call's own tasks, not a sibling concurrent call's already-applied change (cross-column drag fires two un-awaited calls)", async () => {
+            // t3 (IN_PROGRESS, order 0) moves into TODO and fails.
+            // t1 (TODO, order 1) moves into IN_PROGRESS and succeeds.
+            // Neither call awaits the other, matching dashboard.component.ts's
+            // onDrop for a cross-column drop.
+            api.update.mockImplementation((id: string, dto: unknown) => {
+                if (id === 't3') return throwError(() => new Error('boom'));
+                return of({
+                    ...tasks.find((t) => t.id === id),
+                    ...(dto as object),
+                });
+            });
+
+            const failing = store.reorderColumn(TaskStatus.TODO, ['t3']);
+            const succeeding = store.reorderColumn(TaskStatus.IN_PROGRESS, [
+                't1',
+            ]);
+            await Promise.all([failing, succeeding]);
+
+            const t3 = store.tasks().find((t) => t.id === 't3');
+            expect(t3?.status).toBe(TaskStatus.IN_PROGRESS);
+            expect(t3?.order).toBe(0);
+
+            const t1 = store.tasks().find((t) => t.id === 't1');
+            expect(t1?.status).toBe(TaskStatus.IN_PROGRESS);
+            expect(t1?.order).toBe(0);
+
+            expect(store.mutationError()).toBe('Could not save the new order.');
+        });
     });
 
     describe('mutation error handling', () => {
@@ -197,6 +227,29 @@ describe('TasksStore', () => {
 
             expect(store.tasks()).toHaveLength(3);
             expect(store.mutationError()).toBe('Could not delete the task.');
+        });
+
+        it('a fresh attempt clears a stale error from a previous failure, not just the Dismiss button', async () => {
+            api.remove.mockReturnValue(throwError(() => new Error('boom')));
+            await expect(store.remove('t1')).rejects.toThrow();
+            expect(store.mutationError()).not.toBeNull();
+
+            api.create.mockReturnValue(
+                of({ ...tasks[0], id: 'new-id', title: 'New' }),
+            );
+            await store.create({ title: 'New', category: TaskCategory.WORK });
+
+            expect(store.mutationError()).toBeNull();
+        });
+
+        it('load() clears a stale mutation error left over from a prior failed action', async () => {
+            api.remove.mockReturnValue(throwError(() => new Error('boom')));
+            await expect(store.remove('t1')).rejects.toThrow();
+            expect(store.mutationError()).not.toBeNull();
+
+            await store.load();
+
+            expect(store.mutationError()).toBeNull();
         });
 
         it('clearMutationError() resets the error state', async () => {

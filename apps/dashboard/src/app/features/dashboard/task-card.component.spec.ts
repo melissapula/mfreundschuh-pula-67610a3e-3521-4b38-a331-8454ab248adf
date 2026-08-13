@@ -61,15 +61,23 @@ describe('TaskCardComponent', () => {
 
     it('clears the pending revert timer on destroy so it cannot fire after the component is gone', () => {
         jest.useFakeTimers();
-        const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
         const fixture = createCard();
+        const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+        const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
 
         fixture.componentInstance.onDeleteClick();
+        // CDK (drag-drop) schedules its own internal timers around the
+        // component lifecycle, so onDeleteClick's setTimeout isn't reliably
+        // at index 0 — but nothing else can run between the call above
+        // returning and reading `mock.results` here, so the *last*
+        // recorded call is unambiguously its own.
+        const results = setTimeoutSpy.mock.results;
+        const timerId = results[results.length - 1].value;
+
         fixture.destroy();
 
-        expect(clearTimeoutSpy).toHaveBeenCalled();
+        expect(clearTimeoutSpy).toHaveBeenCalledWith(timerId);
 
-        clearTimeoutSpy.mockRestore();
         jest.useRealTimers();
     });
 });

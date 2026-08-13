@@ -61,6 +61,15 @@ export class DashboardComponent implements OnInit {
 
     readonly editingTask = signal<Task | null>(null);
     readonly showForm = signal(false);
+    /**
+     * Scoped to the currently-open dialog, unlike store.mutationError() (a
+     * board-wide banner that renders behind the modal backdrop — no good
+     * for telling the user *why* the dialog didn't close). Set from
+     * store.mutationError() right after a failed save; cleared whenever a
+     * dialog opens so a stale error from something unrelated (a failed
+     * drag, a failed delete) can't leak into a fresh dialog session.
+     */
+    readonly formError = signal<string | null>(null);
 
     readonly canMutate = computed(() => {
         const role = this.auth.role();
@@ -78,16 +87,19 @@ export class DashboardComponent implements OnInit {
     openCreate(): void {
         if (!this.canMutate()) return;
         this.editingTask.set(null);
+        this.formError.set(null);
         this.showForm.set(true);
     }
 
     openEdit(task: Task): void {
         this.editingTask.set(task);
+        this.formError.set(null);
         this.showForm.set(true);
     }
 
     closeForm(): void {
         this.showForm.set(false);
+        this.formError.set(null);
     }
 
     async saveTask(dto: CreateTaskInput | UpdateTaskInput): Promise<void> {
@@ -99,9 +111,12 @@ export class DashboardComponent implements OnInit {
                 await this.store.create(dto as CreateTaskInput);
             }
             this.showForm.set(false);
+            this.formError.set(null);
         } catch {
-            // Leave the dialog open so the user's input isn't lost; the
-            // failure itself is surfaced via store.mutationError().
+            // Leave the dialog open so the user's input isn't lost, and
+            // surface why right inside it — store.mutationError() alone
+            // renders behind the modal backdrop, invisible while it's open.
+            this.formError.set(this.store.mutationError());
         }
     }
 

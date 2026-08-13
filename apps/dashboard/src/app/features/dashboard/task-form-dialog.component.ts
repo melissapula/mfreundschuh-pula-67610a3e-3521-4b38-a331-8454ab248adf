@@ -4,8 +4,10 @@ import {
     HostListener,
     Input,
     OnChanges,
+    OnDestroy,
     Output,
     inject,
+    signal,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -23,12 +25,21 @@ import {
     imports: [ReactiveFormsModule, A11yModule],
     templateUrl: './task-form-dialog.component.html',
 })
-export class TaskFormDialogComponent implements OnChanges {
+export class TaskFormDialogComponent implements OnChanges, OnDestroy {
     private readonly fb = inject(FormBuilder);
 
     @Input() task: Task | null = null;
+    /** A failed save from the parent, shown inline — the board-level error
+     * banner renders behind this dialog's backdrop and would otherwise be
+     * invisible while it's open. */
+    @Input() error: string | null = null;
     @Output() save = new EventEmitter<CreateTaskInput | UpdateTaskInput>();
     @Output() closed = new EventEmitter<void>();
+
+    /** Briefly true to play a CSS shake when a dismiss is blocked by unsaved
+     * changes, so pressing Escape on a dirty form isn't silently ignored. */
+    readonly blockedDismiss = signal(false);
+    private blockedDismissTimer?: ReturnType<typeof setTimeout>;
 
     readonly categories = Object.values(TaskCategory);
     readonly statuses = Object.values(TaskStatus);
@@ -57,7 +68,15 @@ export class TaskFormDialogComponent implements OnChanges {
      * that should always work, dirty or not.
      */
     requestDismiss(): void {
-        if (this.form.dirty) return;
+        if (this.form.dirty) {
+            clearTimeout(this.blockedDismissTimer);
+            this.blockedDismiss.set(true);
+            this.blockedDismissTimer = setTimeout(
+                () => this.blockedDismiss.set(false),
+                400,
+            );
+            return;
+        }
         this.closed.emit();
     }
 
@@ -73,6 +92,10 @@ export class TaskFormDialogComponent implements OnChanges {
 
     get isEditing(): boolean {
         return this.task !== null;
+    }
+
+    ngOnDestroy(): void {
+        clearTimeout(this.blockedDismissTimer);
     }
 
     submit(): void {

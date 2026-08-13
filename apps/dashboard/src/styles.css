@@ -1,3 +1,33 @@
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* A blocked dialog-dismiss (Escape/backdrop click on a dirty form) plays
+   this once, so the attempt isn't silently ignored with no feedback. */
+@keyframes shake {
+    10%,
+    90% {
+        transform: translateX(-1px);
+    }
+    20%,
+    80% {
+        transform: translateX(2px);
+    }
+    30%,
+    50%,
+    70% {
+        transform: translateX(-4px);
+    }
+    40%,
+    60% {
+        transform: translateX(4px);
+    }
+}
+.shake {
+    animation: shake 0.4s;
+}
+@media (prefers-reduced-motion: reduce) {
+    .shake {
+        animation: none;
+    }
+}
