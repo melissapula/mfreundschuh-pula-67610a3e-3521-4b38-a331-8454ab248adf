@@ -51,7 +51,7 @@ dist/apps/dashboard/browser --project-name=turbovets-task-dashboard-missa
   this environment — call it via `"$env:USERPROFILE\.fly\bin\flyctl.exe"` in
   PowerShell, or open a fresh terminal.
 
-## Status as of 2026-08-13
+## Status as of 2026-08-12
 
 Core build, tests (60 total: 20 libs/auth + 21 api + 19 dashboard), and
 deployment are done and verified live. Two security-hardening passes are also
@@ -59,6 +59,30 @@ done — see README's "Security hardening" and "Second pass" subsections under
 Access Control for the full list of what was fixed (timing attack, rate
 limiting, helmet, non-root Docker container, CORS tightening, slimmed Docker
 image).
+
+Repo-wide reformat to 4-space indent (`tabWidth: 4` in `.prettierrc`) via
+`nx format:write --all`. `package-lock.json` is excluded from Prettier in
+`.prettierignore` — npm always writes it 2-space regardless, so reformatting
+it was pure ~60k-line churn with no benefit.
+
+GitHub Actions CI (`.github/workflows/ci.yml`) now runs
+`nx run-many -t lint --all` and `nx run-many -t test --projects=auth,api,
+dashboard` on every push/PR to `master` (`libs/data` has no spec files, so
+it's excluded from the test run same as the `test:coverage` npm script).
+Turning CI on for the first time surfaced and fixed 15 pre-existing
+`dashboard:lint` errors nobody had checked automatically before:
+constructor injection → `inject()` across 6 files
+(`@angular-eslint/prefer-inject`); `task-form-dialog`'s `@Output() close`
+renamed to `closed` (collided with the native DOM `close` event,
+`no-output-native`); the `autofocus` attribute replaced with a `ViewChild` +
+`ngAfterViewInit()` focus call (`template/no-autofocus`); and an Escape-key
+handler added to the dialog so its backdrop-click-to-dismiss has a keyboard
+equivalent (`template/click-events-have-key-events`). Converting
+`AuthService`/`TasksStore` to `inject()` broke `auth.service.spec.ts` and
+`tasks.store.spec.ts`, which had been bypassing Angular DI with
+`new AuthService(http)` / `new TasksStore(api)` — both rewritten onto
+`TestBed.configureTestingModule()` + `TestBed.inject()`, since `inject()`
+requires an active injection context.
 
 ## Open follow-up: frontend CSP (not shipped)
 
