@@ -4,7 +4,8 @@
   "license": "MIT",
   "scripts": {
     "seed": "ts-node -r reflect-metadata --project apps/api/tsconfig.app.json apps/api/src/seed.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:coverage": "nx run-many -t test --projects=auth,api,dashboard"
   },
   "private": true,
   "lint-staged": {

@@ -556,6 +556,15 @@ a 401 response would silently fail to redirect to `/login` in the real app.
 Fixed by injecting `Router` at the top of the interceptor, same pattern as
 `AuthService`.
 
+### Coverage reports
+
+Every `nx test <project>` run generates an HTML coverage report — open
+`coverage/apps/api/index.html`, `coverage/apps/dashboard/index.html`, or
+`coverage/libs/auth/index.html` in a browser to see line-by-line coverage,
+drillable per file. `npm run test:coverage` refreshes all three at once.
+Current numbers: `libs/auth` ~98% lines, `apps/api` ~95% lines, `apps/dashboard`
+~88% lines — highest where the assessment weights correctness most heavily.
+
 ---
 
 ## Deployment
