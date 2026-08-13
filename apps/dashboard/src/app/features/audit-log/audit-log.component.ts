@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -12,11 +12,11 @@ import { AuditApiService } from '../../core/api/audit-api.service';
     templateUrl: './audit-log.component.html',
 })
 export class AuditLogComponent implements OnInit {
+    private readonly api = inject(AuditApiService);
+
     readonly entries = signal<AuditLog[]>([]);
     readonly loading = signal(true);
     readonly error = signal<string | null>(null);
-
-    constructor(private readonly api: AuditApiService) {}
 
     async ngOnInit(): Promise<void> {
         try {

@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
     CreateTaskInput,
@@ -21,6 +21,7 @@ export type SortBy = 'order' | 'title' | 'createdAt';
  */
 @Injectable({ providedIn: 'root' })
 export class TasksStore {
+    private readonly api = inject(TasksApiService);
     private readonly _tasks = signal<Task[]>([]);
     private readonly _loading = signal(false);
     private readonly _error = signal<string | null>(null);
@@ -83,8 +84,6 @@ export class TasksStore {
             percent: total ? Math.round((done / total) * 100) : 0,
         };
     });
-
-    constructor(private readonly api: TasksApiService) {}
 
     setCategoryFilter(value: CategoryFilter): void {
         this._categoryFilter.set(value);

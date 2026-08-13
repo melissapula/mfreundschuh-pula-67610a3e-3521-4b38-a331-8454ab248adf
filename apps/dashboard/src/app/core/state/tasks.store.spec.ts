@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { Task, TaskCategory, TaskStatus } from '@app/data/browser';
 import { TasksStore } from './tasks.store';
@@ -62,7 +63,10 @@ describe('TasksStore', () => {
             update: jest.fn(),
             remove: jest.fn(),
         };
-        store = new TasksStore(api as unknown as TasksApiService);
+        TestBed.configureTestingModule({
+            providers: [{ provide: TasksApiService, useValue: api }],
+        });
+        store = TestBed.inject(TasksStore);
         await store.load();
     });
 

@@ -5,6 +5,7 @@ import {
     ViewChild,
     ElementRef,
     computed,
+    inject,
     signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -45,6 +46,11 @@ interface Column {
 export class DashboardComponent implements OnInit {
     @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
 
+    readonly store = inject(TasksStore);
+    readonly auth = inject(AuthService);
+    readonly theme = inject(ThemeService);
+    private readonly router = inject(Router);
+
     readonly columns: Column[] = [
         { status: TaskStatus.TODO, label: 'To Do' },
         { status: TaskStatus.IN_PROGRESS, label: 'In Progress' },
@@ -64,13 +70,6 @@ export class DashboardComponent implements OnInit {
         const role = this.auth.role();
         return role !== null && roleHasPermission(role, Permission.AUDIT_READ);
     });
-
-    constructor(
-        readonly store: TasksStore,
-        readonly auth: AuthService,
-        readonly theme: ThemeService,
-        private readonly router: Router,
-    ) {}
 
     ngOnInit(): void {
         this.store.load();

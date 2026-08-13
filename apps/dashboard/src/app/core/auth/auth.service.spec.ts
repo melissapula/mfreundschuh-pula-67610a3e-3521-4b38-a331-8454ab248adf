@@ -1,7 +1,15 @@
 import { HttpClient } from '@angular/common/http';
+import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { Role } from '@app/data/browser';
 import { AuthService } from './auth.service';
+
+function createAuthService(http: Partial<HttpClient>): AuthService {
+    TestBed.configureTestingModule({
+        providers: [{ provide: HttpClient, useValue: http }],
+    });
+    return TestBed.inject(AuthService);
+}
 
 describe('AuthService', () => {
     const loginResponse = {
@@ -20,7 +28,7 @@ describe('AuthService', () => {
 
     it('starts unauthenticated when localStorage has no saved session', () => {
         const http = { post: jest.fn() } as unknown as HttpClient;
-        const auth = new AuthService(http);
+        const auth = createAuthService(http);
 
         expect(auth.isAuthenticated()).toBe(false);
         expect(auth.user()).toBeNull();
@@ -29,7 +37,7 @@ describe('AuthService', () => {
     it('restores a saved session from localStorage on construction', () => {
         localStorage.setItem('tv-auth', JSON.stringify(loginResponse));
         const http = { post: jest.fn() } as unknown as HttpClient;
-        const auth = new AuthService(http);
+        const auth = createAuthService(http);
 
         expect(auth.isAuthenticated()).toBe(true);
         expect(auth.role()).toBe(Role.ADMIN);
@@ -39,7 +47,7 @@ describe('AuthService', () => {
         const http = {
             post: jest.fn().mockReturnValue(of(loginResponse)),
         } as unknown as HttpClient;
-        const auth = new AuthService(http);
+        const auth = createAuthService(http);
 
         auth.login('admin@acme.test', 'Password123!').subscribe();
 
@@ -54,7 +62,7 @@ describe('AuthService', () => {
         const http = {
             post: jest.fn().mockReturnValue(of(loginResponse)),
         } as unknown as HttpClient;
-        const auth = new AuthService(http);
+        const auth = createAuthService(http);
         auth.login('admin@acme.test', 'Password123!').subscribe();
 
         auth.logout();

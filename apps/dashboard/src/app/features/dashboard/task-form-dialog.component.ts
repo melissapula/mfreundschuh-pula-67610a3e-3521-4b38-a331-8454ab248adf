@@ -1,9 +1,13 @@
 import {
+    AfterViewInit,
     Component,
+    ElementRef,
     EventEmitter,
+    HostListener,
     Input,
     OnChanges,
     Output,
+    ViewChild,
     inject,
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -21,12 +25,14 @@ import {
     imports: [ReactiveFormsModule],
     templateUrl: './task-form-dialog.component.html',
 })
-export class TaskFormDialogComponent implements OnChanges {
+export class TaskFormDialogComponent implements OnChanges, AfterViewInit {
     private readonly fb = inject(FormBuilder);
+
+    @ViewChild('titleInput') titleInput?: ElementRef<HTMLInputElement>;
 
     @Input() task: Task | null = null;
     @Output() save = new EventEmitter<CreateTaskInput | UpdateTaskInput>();
-    @Output() close = new EventEmitter<void>();
+    @Output() closed = new EventEmitter<void>();
 
     readonly categories = Object.values(TaskCategory);
     readonly statuses = Object.values(TaskStatus);
@@ -45,6 +51,15 @@ export class TaskFormDialogComponent implements OnChanges {
             category: this.task?.category ?? TaskCategory.WORK,
             status: this.task?.status ?? TaskStatus.TODO,
         });
+    }
+
+    ngAfterViewInit(): void {
+        this.titleInput?.nativeElement.focus();
+    }
+
+    @HostListener('document:keydown.escape')
+    onEscape(): void {
+        this.closed.emit();
     }
 
     get isEditing(): boolean {

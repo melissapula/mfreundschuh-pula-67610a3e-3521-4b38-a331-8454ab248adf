@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { AuthUser } from '@app/data/browser';
 import { environment } from '../../../environments/environment';
@@ -23,14 +23,13 @@ const STORAGE_KEY = 'tv-auth';
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+    private readonly http = inject(HttpClient);
     private readonly state = signal<AuthState | null>(readFromStorage());
 
     readonly user = computed(() => this.state()?.user ?? null);
     readonly accessToken = computed(() => this.state()?.accessToken ?? null);
     readonly isAuthenticated = computed(() => this.state() !== null);
     readonly role = computed(() => this.state()?.user.role ?? null);
-
-    constructor(private readonly http: HttpClient) {}
 
     login(email: string, password: string): Observable<LoginResponse> {
         return this.http
