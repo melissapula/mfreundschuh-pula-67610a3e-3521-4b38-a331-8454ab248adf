@@ -84,6 +84,67 @@ equivalent (`template/click-events-have-key-events`). Converting
 `TestBed.configureTestingModule()` + `TestBed.inject()`, since `inject()`
 requires an active injection context.
 
+## Status as of 2026-08-13
+
+Ran a full-application audit (security + code-quality, both fresh-context
+reviews) and fixed everything real it found, across four rounds — later
+rounds exist because earlier fixes introduced or missed something, caught
+either by a follow-up audit or by actually running the app:
+
+- **Security**: clean, no new findings anywhere in the app. One candidate
+  (a hardcoded JWT_SECRET dev fallback in source) was live-tested against
+  production with a forged token — correctly rejected, confirming the real
+  deployment has its own secret set.
+- **Real bugs fixed**: new tasks always got `order: 0` instead of appending
+  to the bottom of their column (`tasks.service.ts` now computes the next
+  order server-side, scoped by org + status); no error handling on any task
+  mutation (`tasks.store.ts`'s `create`/`update`/`remove`/`reorderColumn`
+  now surface a `mutationError` signal — deliberately separate from the
+  load-gating `error` signal, so a failed mutation doesn't hide an
+  already-loaded board — with per-task rollback on `reorderColumn` failure,
+  not a whole-array snapshot; a re-audit caught the snapshot silently
+  stomping a sibling concurrent call's already-persisted success, then
+  caught a narrower intra-call version of the same bug); `TaskCardComponent`'s
+  delete-confirm timer wasn't cleared on destroy; missing `@Index()` on
+  `organizationId` (both `TaskEntity` and `AuditLogEntity`);
+  `AuditLogEntity.actorUserId` was typed non-nullable `uuid` but stored `''`
+  for unmatched-email login failures — now nullable, stores `null`.
+- **Dialog accessibility** (`task-form-dialog.component.ts`): Escape closing
+  mid-IME-composition and discarding unsaved input on both Escape and
+  backdrop-click, no focus trap despite `aria-modal="true"`, no focus
+  restored to the trigger on close — fixed by adopting Angular CDK's
+  `cdkTrapFocus` + `autoCapture` (already a transitive dependency) instead
+  of hand-rolled focus management. Escape/backdrop now route through a
+  `requestDismiss()` that no-ops on a dirty form; a persistent "Unsaved
+  changes" hint in an `aria-live` region, tied directly to `form.dirty`
+  (not a timed flash), is the real feedback channel for a blocked dismiss —
+  the CSS shake alone was invisible under `prefers-reduced-motion` and
+  silent for screen readers.
+- **A live regression caught by actually running the app, not just unit
+  tests**: adding an `error` `@Input()` to the dialog (to show failed-save
+  messages inline, since the board-level banner renders behind the modal)
+  meant `ngOnChanges` — which fires for _any_ `@Input` change, not just the
+  one being watched for — reset the form and wiped the user's typed input
+  the moment a save failed. Caught by killing the local API server and
+  submitting for real; fixed with a `changes['task']` guard.
+- **`tsconfig.base.json` flipped to `strict: true`** workspace-wide, after
+  checking the actual blast radius first: only one call site needed a fix;
+  `apps/dashboard` and both libs were already strict-clean.
+- **Dev-only `npm audit` findings** (19, all in the nx/webpack toolchain):
+  confirmed zero production impact (`--omit=dev` → 0) and left as-is —
+  fixing requires a breaking `@nx/webpack` downgrade for no shipped benefit.
+- Tests: 60 → 106. Lint clean, both production builds clean, CI green
+  throughout.
+- **Both apps redeployed** (Fly.io + Cloudflare Pages) and the fixes
+  live-verified against production directly — logged in, created a task,
+  watched it land at the bottom of the column and the "Unsaved changes"
+  hint appear, then cleaned up the test data. `master`, CI, and the live
+  demo are all in sync as of this deploy.
+
+Still outstanding: the required hiring-team walkthrough video itself (an
+outline exists, not committed to the repo — see memory) and its link in
+the README, which still has the submission placeholder.
+
 ## Open follow-up: frontend CSP (not shipped)
 
 Adding a `Content-Security-Policy` header to the Cloudflare Pages `_headers`
