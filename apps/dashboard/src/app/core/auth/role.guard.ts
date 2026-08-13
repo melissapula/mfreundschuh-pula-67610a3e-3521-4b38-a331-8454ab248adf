@@ -10,12 +10,12 @@ import { AuthService } from './auth.service';
  * whether this guard runs.
  */
 export const minRoleGuard = (minimum: Role): CanActivateFn => {
-  return () => {
-    const auth = inject(AuthService);
-    const role = auth.role();
-    if (role && roleAtLeast(role, minimum)) {
-      return true;
-    }
-    return inject(Router).parseUrl('/dashboard');
-  };
+    return () => {
+        const auth = inject(AuthService);
+        const role = auth.role();
+        if (role && roleAtLeast(role, minimum)) {
+            return true;
+        }
+        return inject(Router).parseUrl('/dashboard');
+    };
 };

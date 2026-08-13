@@ -3,7 +3,7 @@
  * rank in this same order to implement inheritance (Owner > Admin > Viewer).
  */
 export enum Role {
-  VIEWER = 'VIEWER',
-  ADMIN = 'ADMIN',
-  OWNER = 'OWNER',
+    VIEWER = 'VIEWER',
+    ADMIN = 'ADMIN',
+    OWNER = 'OWNER',
 }

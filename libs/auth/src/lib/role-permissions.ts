@@ -7,11 +7,11 @@ import { Permission, Role } from '@app/data/browser';
 const VIEWER_PERMISSIONS: Permission[] = [Permission.TASK_READ];
 
 const ADMIN_PERMISSIONS: Permission[] = [
-  ...VIEWER_PERMISSIONS,
-  Permission.TASK_CREATE,
-  Permission.TASK_UPDATE,
-  Permission.TASK_DELETE,
-  Permission.AUDIT_READ,
+    ...VIEWER_PERMISSIONS,
+    Permission.TASK_CREATE,
+    Permission.TASK_UPDATE,
+    Permission.TASK_DELETE,
+    Permission.AUDIT_READ,
 ];
 
 /**
@@ -24,15 +24,15 @@ const ADMIN_PERMISSIONS: Permission[] = [
 const OWNER_PERMISSIONS: Permission[] = [...ADMIN_PERMISSIONS];
 
 const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
-  [Role.VIEWER]: new Set(VIEWER_PERMISSIONS),
-  [Role.ADMIN]: new Set(ADMIN_PERMISSIONS),
-  [Role.OWNER]: new Set(OWNER_PERMISSIONS),
+    [Role.VIEWER]: new Set(VIEWER_PERMISSIONS),
+    [Role.ADMIN]: new Set(ADMIN_PERMISSIONS),
+    [Role.OWNER]: new Set(OWNER_PERMISSIONS),
 };
 
 export function roleHasPermission(role: Role, permission: Permission): boolean {
-  return ROLE_PERMISSIONS[role].has(permission);
+    return ROLE_PERMISSIONS[role].has(permission);
 }
 
 export function permissionsForRole(role: Role): Permission[] {
-  return Array.from(ROLE_PERMISSIONS[role]);
+    return Array.from(ROLE_PERMISSIONS[role]);
 }

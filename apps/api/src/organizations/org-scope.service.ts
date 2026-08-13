@@ -11,13 +11,13 @@ import { OrganizationsService } from './organizations.service';
  */
 @Injectable()
 export class OrgScopeService {
-  constructor(private readonly organizations: OrganizationsService) {}
+    constructor(private readonly organizations: OrganizationsService) {}
 
-  async accessibleOrgIds(user: AuthUser): Promise<string[]> {
-    const orgs = await this.organizations.findAll();
-    return getAccessibleOrgIds(
-      { role: user.role, organizationId: user.organizationId },
-      orgs,
-    );
-  }
+    async accessibleOrgIds(user: AuthUser): Promise<string[]> {
+        const orgs = await this.organizations.findAll();
+        return getAccessibleOrgIds(
+            { role: user.role, organizationId: user.organizationId },
+            orgs,
+        );
+    }
 }

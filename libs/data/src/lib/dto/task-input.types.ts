@@ -8,17 +8,17 @@ import { TaskCategory, TaskStatus } from '../enums/task.enum';
  * decorated classes would pull class-validator into the browser bundle.
  */
 export interface CreateTaskInput {
-  title: string;
-  description?: string;
-  category: TaskCategory;
-  status?: TaskStatus;
-  order?: number;
+    title: string;
+    description?: string;
+    category: TaskCategory;
+    status?: TaskStatus;
+    order?: number;
 }
 
 export interface UpdateTaskInput {
-  title?: string;
-  description?: string;
-  category?: TaskCategory;
-  status?: TaskStatus;
-  order?: number;
+    title?: string;
+    description?: string;
+    category?: TaskCategory;
+    status?: TaskStatus;
+    order?: number;
 }

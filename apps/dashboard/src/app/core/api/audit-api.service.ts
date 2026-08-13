@@ -6,9 +6,9 @@ import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuditApiService {
-  constructor(private readonly http: HttpClient) {}
+    constructor(private readonly http: HttpClient) {}
 
-  list(): Observable<AuditLog[]> {
-    return this.http.get<AuditLog[]>(`${environment.apiUrl}/audit-log`);
-  }
+    list(): Observable<AuditLog[]> {
+        return this.http.get<AuditLog[]>(`${environment.apiUrl}/audit-log`);
+    }
 }

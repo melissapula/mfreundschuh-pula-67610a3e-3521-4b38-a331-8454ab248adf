@@ -9,127 +9,130 @@ import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Role, TaskCategory, TaskStatus } from '@app/data';
 import {
-  AuditLogEntity,
-  OrganizationEntity,
-  TaskEntity,
-  UserEntity,
+    AuditLogEntity,
+    OrganizationEntity,
+    TaskEntity,
+    UserEntity,
 } from './entities';
 
 const DEV_PASSWORD = 'Password123!';
 
 async function seed() {
-  const dataSource = new DataSource({
-    type: 'better-sqlite3',
-    database: process.env.DB_PATH ?? 'data/db.sqlite',
-    entities: [OrganizationEntity, UserEntity, TaskEntity, AuditLogEntity],
-    synchronize: true,
-  });
-  await dataSource.initialize();
+    const dataSource = new DataSource({
+        type: 'better-sqlite3',
+        database: process.env.DB_PATH ?? 'data/db.sqlite',
+        entities: [OrganizationEntity, UserEntity, TaskEntity, AuditLogEntity],
+        synchronize: true,
+    });
+    await dataSource.initialize();
 
-  const orgRepo = dataSource.getRepository(OrganizationEntity);
-  const userRepo = dataSource.getRepository(UserEntity);
-  const taskRepo = dataSource.getRepository(TaskEntity);
-  const auditRepo = dataSource.getRepository(AuditLogEntity);
+    const orgRepo = dataSource.getRepository(OrganizationEntity);
+    const userRepo = dataSource.getRepository(UserEntity);
+    const taskRepo = dataSource.getRepository(TaskEntity);
+    const auditRepo = dataSource.getRepository(AuditLogEntity);
 
-  // Idempotent: wipe and recreate the demo dataset every run.
-  await auditRepo.clear();
-  await taskRepo.clear();
-  await userRepo.clear();
-  await orgRepo.clear();
+    // Idempotent: wipe and recreate the demo dataset every run.
+    await auditRepo.clear();
+    await taskRepo.clear();
+    await userRepo.clear();
+    await orgRepo.clear();
 
-  const acme = await orgRepo.save(
-    orgRepo.create({ name: 'Acme Corp', parentOrgId: null }),
-  );
-  const engineering = await orgRepo.save(
-    orgRepo.create({ name: 'Acme Corp / Engineering', parentOrgId: acme.id }),
-  );
+    const acme = await orgRepo.save(
+        orgRepo.create({ name: 'Acme Corp', parentOrgId: null }),
+    );
+    const engineering = await orgRepo.save(
+        orgRepo.create({
+            name: 'Acme Corp / Engineering',
+            parentOrgId: acme.id,
+        }),
+    );
 
-  const passwordHash = await bcrypt.hash(DEV_PASSWORD, 10);
+    const passwordHash = await bcrypt.hash(DEV_PASSWORD, 10);
 
-  const owner = await userRepo.save(
-    userRepo.create({
-      email: 'owner@acme.test',
-      passwordHash,
-      role: Role.OWNER,
-      organizationId: acme.id,
-    }),
-  );
-  const admin = await userRepo.save(
-    userRepo.create({
-      email: 'admin@acme.test',
-      passwordHash,
-      role: Role.ADMIN,
-      organizationId: acme.id,
-    }),
-  );
-  const adminEng = await userRepo.save(
-    userRepo.create({
-      email: 'admin.eng@acme.test',
-      passwordHash,
-      role: Role.ADMIN,
-      organizationId: engineering.id,
-    }),
-  );
-  const viewer = await userRepo.save(
-    userRepo.create({
-      email: 'viewer@acme.test',
-      passwordHash,
-      role: Role.VIEWER,
-      organizationId: engineering.id,
-    }),
-  );
+    const owner = await userRepo.save(
+        userRepo.create({
+            email: 'owner@acme.test',
+            passwordHash,
+            role: Role.OWNER,
+            organizationId: acme.id,
+        }),
+    );
+    const admin = await userRepo.save(
+        userRepo.create({
+            email: 'admin@acme.test',
+            passwordHash,
+            role: Role.ADMIN,
+            organizationId: acme.id,
+        }),
+    );
+    const adminEng = await userRepo.save(
+        userRepo.create({
+            email: 'admin.eng@acme.test',
+            passwordHash,
+            role: Role.ADMIN,
+            organizationId: engineering.id,
+        }),
+    );
+    const viewer = await userRepo.save(
+        userRepo.create({
+            email: 'viewer@acme.test',
+            passwordHash,
+            role: Role.VIEWER,
+            organizationId: engineering.id,
+        }),
+    );
 
-  await taskRepo.save([
-    taskRepo.create({
-      title: 'Draft Q3 board update',
-      description: 'Company-wide priorities for the board deck.',
-      category: TaskCategory.WORK,
-      status: TaskStatus.IN_PROGRESS,
-      order: 0,
-      ownerId: owner.id,
-      organizationId: acme.id,
-    }),
-    taskRepo.create({
-      title: 'Review vendor contract',
-      description: 'Legal flagged two clauses to renegotiate.',
-      category: TaskCategory.WORK,
-      status: TaskStatus.TODO,
-      order: 1,
-      ownerId: admin.id,
-      organizationId: acme.id,
-    }),
-    taskRepo.create({
-      title: 'Fix flaky CI pipeline',
-      description: 'Intermittent timeout in the e2e suite.',
-      category: TaskCategory.WORK,
-      status: TaskStatus.IN_PROGRESS,
-      order: 0,
-      ownerId: adminEng.id,
-      organizationId: engineering.id,
-    }),
-    taskRepo.create({
-      title: 'Pair on the RBAC guard tests',
-      description: '',
-      category: TaskCategory.WORK,
-      status: TaskStatus.TODO,
-      order: 1,
-      ownerId: adminEng.id,
-      organizationId: engineering.id,
-    }),
-    taskRepo.create({
-      title: 'Read the new onboarding doc',
-      description: '',
-      category: TaskCategory.PERSONAL,
-      status: TaskStatus.TODO,
-      order: 2,
-      ownerId: viewer.id,
-      organizationId: engineering.id,
-    }),
-  ]);
+    await taskRepo.save([
+        taskRepo.create({
+            title: 'Draft Q3 board update',
+            description: 'Company-wide priorities for the board deck.',
+            category: TaskCategory.WORK,
+            status: TaskStatus.IN_PROGRESS,
+            order: 0,
+            ownerId: owner.id,
+            organizationId: acme.id,
+        }),
+        taskRepo.create({
+            title: 'Review vendor contract',
+            description: 'Legal flagged two clauses to renegotiate.',
+            category: TaskCategory.WORK,
+            status: TaskStatus.TODO,
+            order: 1,
+            ownerId: admin.id,
+            organizationId: acme.id,
+        }),
+        taskRepo.create({
+            title: 'Fix flaky CI pipeline',
+            description: 'Intermittent timeout in the e2e suite.',
+            category: TaskCategory.WORK,
+            status: TaskStatus.IN_PROGRESS,
+            order: 0,
+            ownerId: adminEng.id,
+            organizationId: engineering.id,
+        }),
+        taskRepo.create({
+            title: 'Pair on the RBAC guard tests',
+            description: '',
+            category: TaskCategory.WORK,
+            status: TaskStatus.TODO,
+            order: 1,
+            ownerId: adminEng.id,
+            organizationId: engineering.id,
+        }),
+        taskRepo.create({
+            title: 'Read the new onboarding doc',
+            description: '',
+            category: TaskCategory.PERSONAL,
+            status: TaskStatus.TODO,
+            order: 2,
+            ownerId: viewer.id,
+            organizationId: engineering.id,
+        }),
+    ]);
 
-  await dataSource.destroy();
+    await dataSource.destroy();
 
-  console.log(`
+    console.log(`
 Seed complete. Org tree:
   Acme Corp (${acme.id})
     Acme Corp / Engineering (${engineering.id})
@@ -143,6 +146,6 @@ Demo users (all share password: ${DEV_PASSWORD}):
 }
 
 seed().catch((err) => {
-  console.error('Seed failed:', err);
-  process.exit(1);
+    console.error('Seed failed:', err);
+    process.exit(1);
 });

@@ -1,10 +1,10 @@
 import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
+    IsEnum,
+    IsInt,
+    IsOptional,
+    IsString,
+    MaxLength,
+    MinLength,
 } from 'class-validator';
 import { TaskCategory, TaskStatus } from '../enums/task.enum';
 
@@ -14,26 +14,26 @@ import { TaskCategory, TaskStatus } from '../enums/task.enum';
  * free of Nest-specific packages — it's imported by the Angular app too.
  */
 export class UpdateTaskDto {
-  @IsOptional()
-  @IsString()
-  @MinLength(1)
-  @MaxLength(200)
-  title?: string;
+    @IsOptional()
+    @IsString()
+    @MinLength(1)
+    @MaxLength(200)
+    title?: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  description?: string;
+    @IsOptional()
+    @IsString()
+    @MaxLength(2000)
+    description?: string;
 
-  @IsOptional()
-  @IsEnum(TaskCategory)
-  category?: TaskCategory;
+    @IsOptional()
+    @IsEnum(TaskCategory)
+    category?: TaskCategory;
 
-  @IsOptional()
-  @IsEnum(TaskStatus)
-  status?: TaskStatus;
+    @IsOptional()
+    @IsEnum(TaskStatus)
+    status?: TaskStatus;
 
-  @IsOptional()
-  @IsInt()
-  order?: number;
+    @IsOptional()
+    @IsInt()
+    order?: number;
 }

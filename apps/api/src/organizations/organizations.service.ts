@@ -10,12 +10,12 @@ import { OrganizationEntity } from '../entities';
  */
 @Injectable()
 export class OrganizationsService {
-  constructor(
-    @InjectRepository(OrganizationEntity)
-    private readonly repo: Repository<OrganizationEntity>,
-  ) {}
+    constructor(
+        @InjectRepository(OrganizationEntity)
+        private readonly repo: Repository<OrganizationEntity>,
+    ) {}
 
-  findAll(): Promise<OrganizationEntity[]> {
-    return this.repo.find();
-  }
+    findAll(): Promise<OrganizationEntity[]> {
+        return this.repo.find();
+    }
 }

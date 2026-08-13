@@ -471,8 +471,8 @@ curl -X POST http://localhost:3000/api/auth/login \
 
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "user": { "sub": "…", "email": "admin@acme.test", "role": "ADMIN", "organizationId": "…" }
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "user": { "sub": "…", "email": "admin@acme.test", "role": "ADMIN", "organizationId": "…" }
 }
 ```
 

@@ -2,13 +2,13 @@ import { Role } from '@app/data/browser';
 
 /** Minimal org shape this module needs — callers pass in whatever they have (a TypeORM entity works fine). */
 export interface OrgNode {
-  id: string;
-  parentOrgId: string | null;
+    id: string;
+    parentOrgId: string | null;
 }
 
 export interface ScopeActor {
-  role: Role;
-  organizationId: string;
+    role: Role;
+    organizationId: string;
 }
 
 /**
@@ -28,25 +28,25 @@ export interface ScopeActor {
  * sub-org's parent is always a root), matching the data model's constraint.
  */
 export function getAccessibleOrgIds(
-  actor: ScopeActor,
-  orgs: OrgNode[],
+    actor: ScopeActor,
+    orgs: OrgNode[],
 ): string[] {
-  const childrenOf = (id: string): string[] =>
-    orgs.filter((o) => o.parentOrgId === id).map((o) => o.id);
+    const childrenOf = (id: string): string[] =>
+        orgs.filter((o) => o.parentOrgId === id).map((o) => o.id);
 
-  const rootOf = (id: string): string => {
-    const node = orgs.find((o) => o.id === id);
-    return node?.parentOrgId ?? id;
-  };
+    const rootOf = (id: string): string => {
+        const node = orgs.find((o) => o.id === id);
+        return node?.parentOrgId ?? id;
+    };
 
-  switch (actor.role) {
-    case Role.VIEWER:
-      return [actor.organizationId];
-    case Role.ADMIN:
-      return [actor.organizationId, ...childrenOf(actor.organizationId)];
-    case Role.OWNER: {
-      const root = rootOf(actor.organizationId);
-      return [root, ...childrenOf(root)];
+    switch (actor.role) {
+        case Role.VIEWER:
+            return [actor.organizationId];
+        case Role.ADMIN:
+            return [actor.organizationId, ...childrenOf(actor.organizationId)];
+        case Role.OWNER: {
+            const root = rootOf(actor.organizationId);
+            return [root, ...childrenOf(root)];
+        }
     }
-  }
 }

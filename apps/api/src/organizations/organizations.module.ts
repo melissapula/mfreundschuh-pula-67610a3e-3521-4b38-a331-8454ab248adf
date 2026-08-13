@@ -5,8 +5,8 @@ import { OrganizationsService } from './organizations.service';
 import { OrgScopeService } from './org-scope.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OrganizationEntity])],
-  providers: [OrganizationsService, OrgScopeService],
-  exports: [OrganizationsService, OrgScopeService],
+    imports: [TypeOrmModule.forFeature([OrganizationEntity])],
+    providers: [OrganizationsService, OrgScopeService],
+    exports: [OrganizationsService, OrgScopeService],
 })
 export class OrganizationsModule {}

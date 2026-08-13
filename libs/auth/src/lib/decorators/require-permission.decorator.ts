@@ -5,4 +5,4 @@ export const PERMISSION_KEY = 'requiredPermission';
 
 /** Declares the Permission a route requires; enforced by PermissionsGuard. */
 export const RequirePermission = (permission: Permission) =>
-  SetMetadata(PERMISSION_KEY, permission);
+    SetMetadata(PERMISSION_KEY, permission);

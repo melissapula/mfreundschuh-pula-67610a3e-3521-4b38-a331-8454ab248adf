@@ -12,9 +12,9 @@ import { join } from 'path';
 import { register } from 'tsconfig-paths';
 
 register({
-  baseUrl: join(__dirname, '../../..'),
-  paths: {
-    '@app/data': ['libs/data/src/index.ts'],
-    '@app/auth': ['libs/auth/src/index.ts'],
-  },
+    baseUrl: join(__dirname, '../../..'),
+    paths: {
+        '@app/data': ['libs/data/src/index.ts'],
+        '@app/auth': ['libs/auth/src/index.ts'],
+    },
 });
