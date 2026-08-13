@@ -6,6 +6,13 @@ import * as bcrypt from 'bcrypt';
 import { AuthUser } from '@app/data';
 import { UserEntity } from '../entities';
 
+// A syntactically valid bcrypt hash with no corresponding real password.
+// bcrypt.compare() always runs against *something* below — the real hash,
+// or this one — so an unknown email and a wrong password take the same
+// amount of time. Without this, returning early for "no such user" is a
+// timing side-channel an attacker can use to enumerate valid emails.
+const DUMMY_HASH = bcrypt.hashSync('no-account-has-this-password', 10);
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -24,11 +31,11 @@ export class AuthService {
     password: string,
   ): Promise<UserEntity | null> {
     const user = await this.users.findOne({ where: { email } });
-    if (!user) {
-      return null;
-    }
-    const matches = await bcrypt.compare(password, user.passwordHash);
-    return matches ? user : null;
+    const matches = await bcrypt.compare(
+      password,
+      user?.passwordHash ?? DUMMY_HASH,
+    );
+    return user && matches ? user : null;
   }
 
   issueToken(user: UserEntity): { accessToken: string; user: AuthUser } {

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PermissionsGuard } from '@app/auth';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -33,6 +34,9 @@ import { TasksModule } from '../tasks/tasks.module';
         synchronize: true,
       }),
     }),
+    // Global default: 100 requests/minute/IP. Individual routes (login) set
+    // a much stricter limit via @Throttle() — see AuthController.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100 }]),
     AuthModule,
     AuditModule,
     OrganizationsModule,
@@ -41,8 +45,10 @@ import { TasksModule } from '../tasks/tasks.module';
   controllers: [AppController],
   providers: [
     AppService,
-    // Order matters: JwtAuthGuard must run first to populate request.user
-    // before PermissionsGuard reads it.
+    // Order matters: ThrottlerGuard runs first so unauthenticated brute-force
+    // attempts get rate-limited before JwtAuthGuard even runs; JwtAuthGuard
+    // must run before PermissionsGuard to populate request.user.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
   ],

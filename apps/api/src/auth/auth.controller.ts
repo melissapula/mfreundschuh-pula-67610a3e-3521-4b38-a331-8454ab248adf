@@ -6,6 +6,7 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuditAction, LoginDto } from '@app/data';
 import { Public } from '@app/auth';
 import { AuthService } from './auth.service';
@@ -21,6 +22,9 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  // Much stricter than the app-wide default (100/min) — this is the one
+  // endpoint an attacker would actually want to brute-force.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async login(@Body() dto: LoginDto) {
     const user = await this.auth.validateCredentials(dto.email, dto.password);
 

@@ -1,0 +1,4 @@
+# Shell scripts must keep LF line endings regardless of platform — a CRLF
+# shebang line breaks execution inside the Linux container (apps/api/entrypoint.sh
+# is COPYed into the Docker image and run there).
+*.sh text eol=lf

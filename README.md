@@ -338,6 +338,46 @@ ownership isn't a bypass. Ownership is used for audit attribution and the
 tied to it (a task's org is always its owner's org at creation time), which is
 what makes org-scoping trustworthy rather than just self-reported.
 
+### Security hardening (post-build audit)
+
+After the core feature set was done, a full pass looking specifically for
+security gaps turned up four worth fixing before calling this finished:
+
+- **Login timing attack (user enumeration)** — `AuthService.validateCredentials`
+  used to return immediately for an unknown email, skipping the (slow)
+  `bcrypt.compare` call that a real account would trigger. That timing gap is
+  a side-channel: an attacker can tell "no such account" from "wrong password"
+  just by measuring response time. Fixed by always running `bcrypt.compare`
+  against something — a real hash, or a precomputed dummy one — so both paths
+  take the same time.
+- **No rate limiting on `/auth/login`** — added `@nestjs/throttler`: a
+  generous global default (100 req/min/IP) plus a strict override on the
+  login route specifically (5 attempts/min/IP), since that's the one endpoint
+  worth brute-forcing.
+- **Missing security headers** — added `helmet()` to the bootstrap, giving
+  every response a Content-Security-Policy, HSTS, X-Frame-Options,
+  X-Content-Type-Options, etc.
+- **Docker container ran as root** — the api's Dockerfile now creates an
+  unprivileged `nestjs` user and drops to it via a `gosu`-based entrypoint
+  script. Root is still needed for one step — the Fly volume mounts owned by
+  root regardless of image config, so its ownership has to be fixed before the
+  app can write `db.sqlite` to it — but the actual Node process never runs as
+  root. Verified on the live deployment: the app's PID shows `Uid: 1001`, not
+  `0`.
+
+All four verified against the live deployment, not just locally: rate-limit
+headers and a real 429 after 5 rapid login attempts, `helmet`'s headers
+present on every response, and the non-root UID confirmed via `fly ssh
+console`.
+
+**Known, accepted risk:** this is a live, public demo with credentials
+published on the login screen and in this README (`Password123!` for all
+four seeded accounts, including an `OWNER`). That's intentional — TurboVets
+needs to log in too — but it does mean anyone who finds the URL can log in
+with full org control and alter the seeded data. Worth re-seeding
+(`npm run seed`, or `fly ssh console -C "node seed.js"` against the live
+instance) before a demo if the data's gotten messy.
+
 ---
 
 ## API documentation
