@@ -132,9 +132,9 @@ Open `http://localhost:4200`, log in with any account above.
 ### 5. Run tests
 
 ```bash
-npx nx test auth        # libs/auth — RBAC core logic (20 tests)
-npx nx test api          # apps/api (21 tests)
-npx nx test dashboard    # apps/dashboard (19 tests)
+npx nx test auth        # libs/auth — RBAC core logic (21 tests)
+npx nx test api          # apps/api (27 tests)
+npx nx test dashboard    # apps/dashboard (81 tests)
 ```
 
 ### Pre-commit hooks
@@ -274,7 +274,7 @@ erDiagram
     }
     AUDIT_LOG {
         uuid id PK
-        uuid actorUserId FK
+        uuid actorUserId FK "nullable"
         string actorEmail
         string action
         string resourceType
@@ -294,10 +294,10 @@ erDiagram
   trustworthy: a task can't be created "into" another org by sending an
   arbitrary `organizationId` in the request body (the DTO doesn't even accept
   one).
-- **AuditLog.actorUserId** is an empty string, not null, when a login attempt
-  fails against an email that matches no account — there's no real actor to
-  attribute it to, but the attempted email is still recorded in `actorEmail` for
-  security visibility.
+- **AuditLog.actorUserId** is `null` when a login attempt fails against an
+  email that matches no account — there's no real actor to attribute it to,
+  but the attempted email is still recorded in `actorEmail` for security
+  visibility.
 
 ---
 
@@ -535,14 +535,17 @@ curl http://localhost:3000/api/audit-log -H "Authorization: Bearer $TOKEN"
 
 ## Testing
 
-60 tests total, weighted toward the highest-graded area per the assessment
+129 tests total, weighted toward the highest-graded area per the assessment
 brief (RBAC/auth correctness over frontend coverage):
 
-| Project          | Tests | What's covered                                                                                                                                                                                                                                                                                                                   |
-| ---------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `libs/auth`      | 20    | Role rank/inheritance, permission mapping, org-scope resolution (all pure functions, no framework), `PermissionsGuard`                                                                                                                                                                                                           |
-| `apps/api`       | 21    | `AuthService` (credential validation, token issuance), `JwtAuthGuard`'s `@Public()` bypass, `OrgScopeService`, `AuditService`, and `TasksService` — the centerpiece: proves `organizationId`/`ownerId` always derive from the authenticated actor, cross-org mutation returns 404 + logs `ACCESS_DENIED`, and org-scoped listing |
-| `apps/dashboard` | 19    | `TasksStore`'s filter/sort/grouping logic, `AuthService` session persistence, `authInterceptor` (including a real bug it caught — see below)                                                                                                                                                                                     |
+| Project          | Tests | What's covered                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `libs/auth`      | 21    | Role rank/inheritance, permission mapping, org-scope resolution (all pure functions, no framework), `PermissionsGuard`, `@RequirePermission` decorator metadata                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `apps/api`       | 27    | `AuthService` (credential validation, token issuance), `JwtAuthGuard`'s `@Public()` bypass, `OrgScopeService`, `AuditService`, `OrganizationsService`, `TasksService` — the centerpiece: proves `organizationId`/`ownerId` always derive from the authenticated actor, cross-org mutation returns 404 + logs `ACCESS_DENIED`, and org-scoped listing — plus a real in-memory TypeORM `DataSource` test that exercises every entity relation end-to-end (the mocked-repository tests elsewhere never actually resolve TypeORM's lazy relation functions, so a typo'd join target would pass every one of them and still break in production) |
+| `apps/dashboard` | 81    | `TasksStore`'s filter/sort/grouping/mutation logic (including per-task rollback on a failed drag reorder), `AuthService` session persistence, `authInterceptor` (including a real bug it caught — see below), `DashboardComponent`'s drag-and-drop/keyboard-shortcut/role-gating logic, `TaskCardComponent`, `ThemeService`, and the HTTP API wrapper services                                                                                                                                                                                                                                                                              |
+
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs `nx run-many -t
+lint --all` and this full test matrix on every push and PR to `master`.
 
 Also manually smoke-tested end-to-end in a live browser across all 4 seeded
 roles: login, org-scoped task visibility (including the sub-org Admin's lack
@@ -562,8 +565,9 @@ Every `nx test <project>` run generates an HTML coverage report — open
 `coverage/apps/api/index.html`, `coverage/apps/dashboard/index.html`, or
 `coverage/libs/auth/index.html` in a browser to see line-by-line coverage,
 drillable per file. `npm run test:coverage` refreshes all three at once.
-Current numbers: `libs/auth` ~98% lines, `apps/api` ~95% lines, `apps/dashboard`
-~88% lines — highest where the assessment weights correctness most heavily.
+Current numbers (line coverage): `libs/auth` 100%, `apps/api` 100%,
+`apps/dashboard` 98.67% — every project now clears 80% on lines, branches,
+and functions individually, not just in aggregate.
 
 ---
 
@@ -573,9 +577,13 @@ Current numbers: `libs/auth` ~98% lines, `apps/api` ~95% lines, `apps/dashboard`
   (multi-stage: builds via `nx build api`, native `better-sqlite3` compiled
   in the runtime stage). A persistent Fly volume mounted at `/data` holds the
   SQLite file across restarts/redeploys. Config in `fly.toml` at the
-  workspace root. `min_machines_running = 1` — deliberately always-on for
-  the duration of this assessment, so a reviewer never sees a cold-start
-  delay; easy to flip back to auto-stop afterward.
+  workspace root. `min_machines_running = 1` and `auto_stop_machines = false`
+  — the config asks Fly to keep it always-on for the duration of this
+  assessment. In practice the free trial tier overrides that: it caps
+  continuous uptime at 5 minutes per boot regardless of app config, so the
+  machine still stops and restarts on the next request (see the cold-start
+  note above). Adding a card to the Fly account removes the cap; not done
+  for this submission.
 - **Dashboard** — static build on Cloudflare Pages (`apps/dashboard`'s
   production build, `environment.prod.ts` points at the Fly URL above).
   `public/_redirects` (`/* /index.html 200`) makes client-side routing work

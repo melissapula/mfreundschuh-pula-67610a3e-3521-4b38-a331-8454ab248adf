@@ -83,9 +83,30 @@ async function seed() {
     );
 
     await taskRepo.save([
+        // Acme Corp (root) — owned by owner + admin, 2 tasks per status
+        // column so drag-and-drop reordering has something to reorder and
+        // the completion chart isn't stuck at 0%.
         taskRepo.create({
-            title: 'Draft Q3 board update',
-            description: 'Company-wide priorities for the board deck.',
+            title: 'Finalize Q3 board deck',
+            description: 'Company-wide priorities for the board meeting.',
+            category: TaskCategory.WORK,
+            status: TaskStatus.TODO,
+            order: 0,
+            ownerId: owner.id,
+            organizationId: acme.id,
+        }),
+        taskRepo.create({
+            title: 'Renew conference badge',
+            description: '',
+            category: TaskCategory.PERSONAL,
+            status: TaskStatus.TODO,
+            order: 1,
+            ownerId: admin.id,
+            organizationId: acme.id,
+        }),
+        taskRepo.create({
+            title: 'Review vendor contract renewal',
+            description: 'Legal flagged two clauses to renegotiate.',
             category: TaskCategory.WORK,
             status: TaskStatus.IN_PROGRESS,
             order: 0,
@@ -93,29 +114,42 @@ async function seed() {
             organizationId: acme.id,
         }),
         taskRepo.create({
-            title: 'Review vendor contract',
-            description: 'Legal flagged two clauses to renegotiate.',
-            category: TaskCategory.WORK,
-            status: TaskStatus.TODO,
+            title: 'Coordinate office move logistics',
+            description: 'Movers booked; still confirming the new floor plan.',
+            category: TaskCategory.OTHER,
+            status: TaskStatus.IN_PROGRESS,
             order: 1,
             ownerId: admin.id,
             organizationId: acme.id,
         }),
         taskRepo.create({
+            title: 'Approve Q2 budget',
+            description: '',
+            category: TaskCategory.WORK,
+            status: TaskStatus.DONE,
+            order: 0,
+            ownerId: owner.id,
+            organizationId: acme.id,
+        }),
+        taskRepo.create({
+            title: 'Book team offsite venue',
+            description: '',
+            category: TaskCategory.PERSONAL,
+            status: TaskStatus.DONE,
+            order: 1,
+            ownerId: admin.id,
+            organizationId: acme.id,
+        }),
+
+        // Engineering (sub-org) — owned by admin.eng + viewer, same 2-per-
+        // column spread so the sub-org board looks just as real, and the
+        // admin/admin.eng scoping difference has real data on both sides.
+        taskRepo.create({
             title: 'Fix flaky CI pipeline',
             description: 'Intermittent timeout in the e2e suite.',
             category: TaskCategory.WORK,
-            status: TaskStatus.IN_PROGRESS,
-            order: 0,
-            ownerId: adminEng.id,
-            organizationId: engineering.id,
-        }),
-        taskRepo.create({
-            title: 'Pair on the RBAC guard tests',
-            description: '',
-            category: TaskCategory.WORK,
             status: TaskStatus.TODO,
-            order: 1,
+            order: 0,
             ownerId: adminEng.id,
             organizationId: engineering.id,
         }),
@@ -124,7 +158,43 @@ async function seed() {
             description: '',
             category: TaskCategory.PERSONAL,
             status: TaskStatus.TODO,
-            order: 2,
+            order: 1,
+            ownerId: viewer.id,
+            organizationId: engineering.id,
+        }),
+        taskRepo.create({
+            title: 'Pair on the RBAC guard tests',
+            description: '',
+            category: TaskCategory.WORK,
+            status: TaskStatus.IN_PROGRESS,
+            order: 0,
+            ownerId: adminEng.id,
+            organizationId: engineering.id,
+        }),
+        taskRepo.create({
+            title: 'Set up local dev environment',
+            description: '',
+            category: TaskCategory.OTHER,
+            status: TaskStatus.IN_PROGRESS,
+            order: 1,
+            ownerId: viewer.id,
+            organizationId: engineering.id,
+        }),
+        taskRepo.create({
+            title: 'Migrate CI to GitHub Actions',
+            description: '',
+            category: TaskCategory.WORK,
+            status: TaskStatus.DONE,
+            order: 0,
+            ownerId: adminEng.id,
+            organizationId: engineering.id,
+        }),
+        taskRepo.create({
+            title: 'Complete onboarding survey',
+            description: '',
+            category: TaskCategory.PERSONAL,
+            status: TaskStatus.DONE,
+            order: 1,
             ownerId: viewer.id,
             organizationId: engineering.id,
         }),
@@ -134,14 +204,14 @@ async function seed() {
 
     console.log(`
 Seed complete. Org tree:
-  Acme Corp (${acme.id})
-    Acme Corp / Engineering (${engineering.id})
+  Acme Corp (${acme.id}) -- 6 tasks: 2 TODO, 2 IN_PROGRESS, 2 DONE
+    Acme Corp / Engineering (${engineering.id}) -- 6 tasks: 2 TODO, 2 IN_PROGRESS, 2 DONE
 
 Demo users (all share password: ${DEV_PASSWORD}):
-  owner@acme.test      OWNER  @ Acme Corp    -- sees/manages the full tree
-  admin@acme.test      ADMIN  @ Acme Corp    -- sees/manages root + Engineering
-  admin.eng@acme.test  ADMIN  @ Engineering  -- Engineering only, no upward visibility
-  viewer@acme.test     VIEWER @ Engineering  -- read-only, Engineering only
+  owner@acme.test      OWNER  @ Acme Corp    -- sees/manages the full tree (12 tasks)
+  admin@acme.test      ADMIN  @ Acme Corp    -- sees/manages root + Engineering (12 tasks)
+  admin.eng@acme.test  ADMIN  @ Engineering  -- Engineering only, no upward visibility (6 tasks)
+  viewer@acme.test     VIEWER @ Engineering  -- read-only, Engineering only (6 tasks)
 `);
 }
 
