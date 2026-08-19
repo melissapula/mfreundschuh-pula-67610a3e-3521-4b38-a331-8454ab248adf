@@ -5,7 +5,6 @@ coding challenge. NX monorepo: NestJS API + TypeORM/SQLite, Angular dashboard,
 two shared libraries.
 
 **Live demo:** https://turbovets-task-dashboard-missa.pages.dev
-**Video walkthrough:** _TODO — link here before submitting_
 
 ---
 
@@ -574,8 +573,11 @@ and functions individually, not just in aggregate.
 ## Deployment
 
 - **API** — Docker image on [Fly.io](https://fly.io), `apps/api/Dockerfile`
-  (multi-stage: builds via `nx build api`, native `better-sqlite3` compiled
-  in the runtime stage). A persistent Fly volume mounted at `/data` holds the
+  (multi-stage: builds via `nx build api`; native `better-sqlite3`/`bcrypt`
+  bindings compile in a separate `deps` stage, discarded after `npm ci` so
+  the compiler toolchain never reaches the final image — only its compiled
+  `node_modules` gets copied into the runtime stage). A persistent Fly volume
+  mounted at `/data` holds the
   SQLite file across restarts/redeploys. Config in `fly.toml` at the
   workspace root. `min_machines_running = 1` and `auto_stop_machines = false`
   — the config asks Fly to keep it always-on for the duration of this
